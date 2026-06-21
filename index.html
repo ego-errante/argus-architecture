@@ -291,6 +291,17 @@
   .vsx__verdict { font-family:var(--mono); font-size:.82rem; font-weight:600; color:var(--ink);
     background:var(--inset); border:1px solid var(--line); border-radius:8px; padding:12px 14px; text-align:center; }
   .vsx__cap { font-size:.82rem; color:var(--muted); margin:12px 0 0; }
+  .vsx__lead { font-size:.98rem; color:var(--ink-soft); margin:0 0 14px; }
+  .vsx__tabnum { display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px;
+    border-radius:50%; background:var(--inset); color:var(--muted); font-size:.62rem; margin-right:8px; }
+  .vsx__tab[aria-selected="true"] .vsx__tabnum { background:var(--lamp); color:#fff; }
+  .vsx__baseline { opacity:.9; }
+  .vsx__progrow { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .vsx__summary { font-size:1.02rem; color:var(--ink); margin:9px 0 13px; line-height:1.5; }
+  .vsx__more { font-family:var(--mono); font-size:.72rem; color:var(--lamp); background:var(--lamp-wash);
+    border:1px solid var(--line); border-radius:7px; padding:8px 13px; cursor:pointer; }
+  .vsx__more:hover { border-color:var(--lamp); }
+  .vsx__deep { margin-top:13px; }
   .vsx__prog { font-family:var(--mono); font-weight:600; color:var(--ink); font-size:.92rem; }
   .vsx__err { font-family:var(--mono); font-size:.74rem; color:var(--alert); margin:4px 0 9px; }
   .vsx__dx { font-size:.93rem; color:var(--ink-soft); margin:0 0 9px; }
@@ -583,18 +594,18 @@ sequenceDiagram
 
     <h3>The unbounded tail — where a classifier goes blind</h3>
     <p>One identical malformed instruction — <code>[0xff; 8]</code>, zero accounts — sent to three different real programs produces three distinct errors. The four-class baseline collapses all three to one verdict. The agent does not.</p>
-    <p>Pick a program — the baseline's verdict never changes; the agent's diagnosis does. (Real decisions from the graded run.)</p>
+    <p class="vsx__lead"><strong>Click each failure below ↓</strong> &nbsp;The baseline on the left never moves — it's blind. The agent on the right names a different cause every time.</p>
     <div class="vsx" id="vsx">
       <div class="vsx__tabs" role="tablist" aria-label="Failure cases"></div>
       <div class="vsx__panels">
         <div class="vsx__side vsx__baseline">
-          <div class="vsx__h">What the baseline sees</div>
+          <div class="vsx__h">Baseline · 4-class lookup</div>
           <div class="vsx__verdict">bundle_failure → abort <span class="warnmark">⚠</span></div>
-          <p class="vsx__cap">The same verdict for all four. A four-class <code>match</code> can't tell them apart — the error <em>shapes</em> collapse to one bucket.</p>
+          <p class="vsx__cap">The same verdict for all four — it can't tell them apart.</p>
         </div>
         <div class="vsx__side vsx__agent">
-          <div class="vsx__h">What the agent sees</div>
-          <div id="vsxDetail"><p class="vsx__dx">Select a program above.</p></div>
+          <div class="vsx__h">Agent · reasons from the raw error</div>
+          <div id="vsxDetail"></div>
         </div>
       </div>
     </div>
@@ -830,21 +841,38 @@ sequenceDiagram
     // ---- blind vs seen ----
     var vsx = document.getElementById('vsx');
     if(vsx){
+      var SHORT = {
+        'System Program':'Insufficient funds — the transfer asks for about six orders of magnitude more SOL than the account holds.',
+        'SPL-Memo':'Non-UTF-8 memo data — the bytes aren’t valid text.',
+        'SPL-Token':'Malformed instruction discriminant — not a valid SPL-Token instruction.',
+        'Orca Whirlpool':'Wrong or stale Anchor IDL — the instruction matches no handler.'
+      };
       var cases = data.filter(function(r){ return r.program; });
       var tabs = vsx.querySelector('.vsx__tabs');
       var detail = document.getElementById('vsxDetail');
       function render(idx){
         cases.forEach(function(_,i){ tabs.children[i].setAttribute('aria-selected', i===idx?'true':'false'); });
         var r=cases[idx], d=r.d;
-        detail.innerHTML='<div class="vsx__prog">'+esc(r.program)+'</div>'
+        detail.innerHTML =
+          '<div class="vsx__progrow"><span class="vsx__prog">'+esc(r.program)+'</span><span class="vsx__conf">'+esc(d.confidence)+' confident</span></div>'
           +'<div class="vsx__err">raw error · '+esc(r.raw_error)+'</div>'
-          +'<p class="vsx__dx">'+esc(d.diagnosis)+'</p>'
-          +'<span class="vsx__conf">confidence '+esc(d.confidence)+'</span>'
-          +'<div class="vsx__tracelabel">Reasoning trace</div><div class="vsx__trace">'+esc(d.trace)+'</div>';
+          +'<p class="vsx__summary">'+esc(SHORT[r.program]||d.diagnosis.split('. ')[0])+'</p>'
+          +'<button class="vsx__more" type="button" aria-expanded="false">Show the agent’s full reasoning</button>'
+          +'<div class="vsx__deep" hidden>'
+            +'<p class="vsx__dx">'+esc(d.diagnosis)+'</p>'
+            +'<div class="vsx__tracelabel">Reasoning trace — the agent’s own words</div>'
+            +'<div class="vsx__trace">'+esc(d.trace)+'</div>'
+          +'</div>';
+        var more=detail.querySelector('.vsx__more'), deep=detail.querySelector('.vsx__deep');
+        more.addEventListener('click', function(){
+          if(deep.hasAttribute('hidden')){ deep.removeAttribute('hidden'); more.setAttribute('aria-expanded','true'); more.textContent='Hide reasoning'; }
+          else { deep.setAttribute('hidden',''); more.setAttribute('aria-expanded','false'); more.textContent='Show the agent’s full reasoning'; }
+        });
       }
       cases.forEach(function(r,i){
         var b=document.createElement('button');
-        b.className='vsx__tab'; b.setAttribute('role','tab'); b.type='button'; b.textContent=r.program;
+        b.className='vsx__tab'; b.setAttribute('role','tab'); b.type='button';
+        b.innerHTML='<span class="vsx__tabnum">'+(i+1)+'</span>'+esc(r.program);
         b.addEventListener('click', function(){ render(i); });
         tabs.appendChild(b);
       });
