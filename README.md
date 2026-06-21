@@ -3,7 +3,7 @@
 The standalone architecture document for **Argus**, a Solana smart-transaction stack built for the
 Superteam Nigeria *Advanced Infrastructure Challenge*.
 
-- **Live document:** _(Cloudflare Pages URL — added after first deploy)_
+- **Live document:** <https://argus-architecture.foolt757.workers.dev/>
 - **Code repository:** <https://github.com/ego-errante/argus>
 
 It is a single self-contained `index.html` (diagrams via the Mermaid CDN, no build step). Open it
