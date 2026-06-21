@@ -255,6 +255,77 @@
     .section { break-inside:avoid; }
   }
 </style>
+<style>
+  /* ===== interactive layer ===== */
+  /* to-scale play bar */
+  .scale { margin-top:1.2rem; }
+  .scale__play { font-family:var(--mono); font-size:.74rem; letter-spacing:.04em; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:8px 13px; cursor:pointer; }
+  .scale__play:hover { border-color:var(--lamp); color:var(--lamp); }
+  .scale__track { position:relative; height:30px; margin:12px 0 8px; border:1px solid var(--line);
+    border-radius:8px; overflow:hidden; display:flex; background:var(--panel-2); }
+  .scale__seg { height:100%; }
+  .scale__seg.pc { background:var(--signal); }
+  .scale__seg.cf { background:var(--lamp-wash); display:flex; align-items:center; }
+  .scale__seg.cf span { font-family:var(--mono); font-size:.66rem; color:var(--lamp); padding-left:10px; white-space:nowrap; }
+  .scale__head { position:absolute; top:-1px; bottom:-1px; width:2px; background:var(--ink); left:0; opacity:0; }
+  .scale__head.run { opacity:1; }
+  .scale__cap { font-family:var(--mono); font-size:.7rem; color:var(--muted); margin:0; line-height:1.7; }
+  .legdot { display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:middle; margin-right:2px; }
+  .legdot.pc { background:var(--signal); }
+  .legdot.cf { background:var(--lamp-bright); }
+
+  /* blind vs seen — interactive */
+  .vsx { margin:1.3rem 0; }
+  .vsx__tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .vsx__tab { font-family:var(--mono); font-size:.74rem; padding:7px 13px; border:1px solid var(--line);
+    border-radius:999px; background:var(--panel); color:var(--muted); cursor:pointer; }
+  .vsx__tab:hover { color:var(--ink); }
+  .vsx__tab[aria-selected="true"] { border-color:var(--lamp); color:var(--ink); background:var(--lamp-wash); font-weight:500; }
+  .vsx__panels { display:grid; grid-template-columns:.8fr 1.2fr; gap:14px; align-items:start; }
+  @media (max-width:760px){ .vsx__panels { grid-template-columns:1fr; } }
+  .vsx__side { border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:var(--panel); }
+  .vsx__h { font-family:var(--mono); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; margin-bottom:12px; }
+  .vsx__baseline .vsx__h { color:var(--alert); }
+  .vsx__agent .vsx__h { color:var(--signal); }
+  .vsx__verdict { font-family:var(--mono); font-size:.82rem; font-weight:600; color:var(--ink);
+    background:var(--inset); border:1px solid var(--line); border-radius:8px; padding:12px 14px; text-align:center; }
+  .vsx__cap { font-size:.82rem; color:var(--muted); margin:12px 0 0; }
+  .vsx__prog { font-family:var(--mono); font-weight:600; color:var(--ink); font-size:.92rem; }
+  .vsx__err { font-family:var(--mono); font-size:.74rem; color:var(--alert); margin:4px 0 9px; }
+  .vsx__dx { font-size:.93rem; color:var(--ink-soft); margin:0 0 9px; }
+  .vsx__conf { font-family:var(--mono); font-size:.72rem; color:var(--signal); }
+  .vsx__tracelabel,.exp-tracelabel { font-family:var(--mono); font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin:11px 0 4px; }
+  .vsx__trace,.exp-trace { font-family:var(--mono); font-size:.72rem; line-height:1.65; color:var(--muted);
+    background:var(--panel-2); border-left:2px solid var(--lamp); border-radius:0 6px 6px 0; padding:10px 13px; white-space:pre-wrap; }
+
+  /* lifecycle explorer */
+  .explorer { border:1px solid var(--line); border-radius:12px; overflow:hidden; margin:1.2rem 0; background:var(--panel); }
+  .exp-row { border-bottom:1px solid var(--line-soft); }
+  .exp-row:last-child { border-bottom:none; }
+  .exp-head { display:flex; align-items:center; gap:12px; padding:11px 14px; font-size:.85rem; }
+  .exp-head.has-detail { cursor:pointer; }
+  .exp-head.has-detail:hover { background:var(--panel-2); }
+  .exp-pl { font-family:var(--mono); font-weight:600; color:var(--ink); min-width:46px; }
+  .exp-status { font-family:var(--mono); font-size:.64rem; letter-spacing:.05em; min-width:62px; }
+  .exp-status.landed { color:var(--signal); }
+  .exp-status.faulted { color:var(--alert); }
+  .exp-mid { flex:1; display:flex; align-items:center; gap:12px; min-width:0; flex-wrap:wrap; }
+  .exp-slot { font-family:var(--mono); font-size:.74rem; }
+  .minitrack { flex:1; min-width:110px; height:9px; border-radius:4px; display:flex; overflow:hidden; border:1px solid var(--line); background:var(--inset); }
+  .minitrack .pc { background:var(--signal); }
+  .minitrack .cf { background:var(--lamp-bright); }
+  .mini-lbl { font-family:var(--mono); font-size:.66rem; color:var(--muted); }
+  .exp-caret { font-family:var(--mono); color:var(--faint); width:14px; text-align:center; transition:transform .2s var(--ease); }
+  .exp-row.open .exp-caret { transform:rotate(90deg); color:var(--lamp); }
+  .exp-detail { display:none; padding:2px 14px 15px; }
+  .exp-row.open .exp-detail { display:block; }
+  .exp-dx { font-size:.93rem; color:var(--ink-soft); margin:.2rem 0 .6rem; }
+  .exp-meta { display:flex; flex-wrap:wrap; gap:6px 16px; font-family:var(--mono); font-size:.72rem; color:var(--muted); margin-bottom:6px; }
+  .exp-meta b { color:var(--ink); font-weight:500; }
+
+  @media (prefers-reduced-motion: reduce){ .scale__head { transition:none !important; } }
+</style>
 </head>
 <body>
 
@@ -439,6 +510,15 @@ sequenceDiagram
       <div class="delta"><span class="delta__v hi">+12.2 s</span><span class="delta__l">rooting (~31 confirmed blocks)</span></div>
       <div class="node node--final"><span class="node__dot"></span><div class="node__name">FINALIZED</div><p class="node__note">slot rooted and irreversible</p></div>
       <p class="spine__foot"><b>123 ms vs 12.2 s.</b> The first measures how fast votes propagate; the second waits for the chain to root. Same instrument, two different questions.</p>
+      <div class="scale">
+        <button class="scale__play" id="spinePlay" type="button">▶ Play the journey, to scale</button>
+        <div class="scale__track" aria-hidden="true">
+          <div class="scale__seg pc" style="width:1%"></div>
+          <div class="scale__seg cf" style="width:99%"><span>confirmed → finalized · ~12.2 s</span></div>
+          <div class="scale__head" id="scaleHead"></div>
+        </div>
+        <p class="scale__cap"><span class="legdot pc"></span> processed → confirmed ~123 ms (the sliver on the left) &nbsp;·&nbsp; <span class="legdot cf"></span> confirmed → finalized ~12.2 s — about 100× longer.</p>
+      </div>
     </div>
 
     <h3>Failure path — diagnose, remedy, resubmit</h3>
@@ -503,22 +583,19 @@ sequenceDiagram
 
     <h3>The unbounded tail — where a classifier goes blind</h3>
     <p>One identical malformed instruction — <code>[0xff; 8]</code>, zero accounts — sent to three different real programs produces three distinct errors. The four-class baseline collapses all three to one verdict. The agent does not.</p>
-    <div class="vs">
-      <div class="vs__col blind">
-        <div class="vs__h">What the baseline sees</div>
-        <div class="blindstack" aria-hidden="true">
-          <span class="ghost g1">SPL-Memo</span>
-          <span class="ghost g2">SPL-Token</span>
-          <span class="ghost g3">Orca Whirlpool</span>
-          <span class="verdict">bundle_failure → abort <span class="warnmark">⚠</span></span>
+    <p>Pick a program — the baseline's verdict never changes; the agent's diagnosis does. (Real decisions from the graded run.)</p>
+    <div class="vsx" id="vsx">
+      <div class="vsx__tabs" role="tablist" aria-label="Failure cases"></div>
+      <div class="vsx__panels">
+        <div class="vsx__side vsx__baseline">
+          <div class="vsx__h">What the baseline sees</div>
+          <div class="vsx__verdict">bundle_failure → abort <span class="warnmark">⚠</span></div>
+          <p class="vsx__cap">The same verdict for all four. A four-class <code>match</code> can't tell them apart — the error <em>shapes</em> collapse to one bucket.</p>
         </div>
-        <p class="vs__cap">Three programs, one verdict. It cannot tell them apart — the error <em>shapes</em> match, so a <code>match</code> statement is blind.</p>
-      </div>
-      <div class="vs__col seen">
-        <div class="vs__h">What the agent sees</div>
-        <div class="dx"><div class="dx__top"><span class="dx__prog">SPL-Memo</span><span class="dx__conf">0.98</span></div><div class="dx__err">InvalidInstructionData</div><p class="dx__say">Non-UTF-8 memo data ("invalid UTF-8 from byte 0").</p></div>
-        <div class="dx"><div class="dx__top"><span class="dx__prog">SPL-Token</span><span class="dx__conf">0.97</span></div><div class="dx__err">Custom(12)</div><p class="dx__say">Malformed instruction discriminant — InvalidInstruction.</p></div>
-        <div class="dx"><div class="dx__top"><span class="dx__prog">Orca Whirlpool</span><span class="dx__conf">0.98</span></div><div class="dx__err">Custom(101)</div><p class="dx__say">Anchor InstructionFallbackNotFound — wrong or stale IDL.</p></div>
+        <div class="vsx__side vsx__agent">
+          <div class="vsx__h">What the agent sees</div>
+          <div id="vsxDetail"><p class="vsx__dx">Select a program above.</p></div>
+        </div>
       </div>
     </div>
 
@@ -562,16 +639,9 @@ sequenceDiagram
     <div class="eyebrow">07 · Operational evidence</div>
     <h2 class="h">Operational evidence</h2>
     <p class="lede">From the graded mainnet run <code>run-1781958744615</code>, committed to the repo as <code>logs/lifecycle-1781958744615.{md,jsonl}</code>.</p>
-    <h3>The agent vs. the baseline, on real errors</h3>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Program</th><th>Raw error</th><th>Agent diagnosis</th><th>Conf.</th><th>Baseline</th></tr></thead>
-      <tbody>
-        <tr><td>System (funding)</td><td><code>Custom(1)</code></td><td>insufficient funds — held 47.8M lamports, needed 1e15</td><td>0.97</td><td>abort ⚠</td></tr>
-        <tr><td>SPL-Memo</td><td><code>InvalidInstructionData</code></td><td>non-UTF-8 memo data</td><td>0.98</td><td>abort ⚠</td></tr>
-        <tr><td>SPL-Token</td><td><code>Custom(12)</code></td><td>malformed instruction discriminant</td><td>0.97</td><td>abort ⚠</td></tr>
-        <tr><td>Orca Whirlpool</td><td><code>Custom(101)</code></td><td>Anchor fallback-not-found — stale IDL</td><td>0.98</td><td>abort ⚠</td></tr>
-      </tbody>
-    </table></div>
+    <h3>The graded run — every submission, explorable</h3>
+    <p>All 15 real submissions from <code>run-1781958744615</code>. Faulted rows expand to the agent's diagnosis, triage, and full reasoning trace; landed rows show the commitment deltas drawn to scale.</p>
+    <div id="explorer" class="explorer"><p style="padding:14px;color:var(--muted);font-size:.9rem;">Loading the run…</p></div>
     <p>Four payloads the baseline collapses to one verdict drew four distinct diagnoses. The two recoverable injections — expired blockhash (aged 200 slots, conf. 0.99) and compute exceeded (<code>cu_limit=1</code>, conf. 0.99) — were triaged and <strong>landed on attempt 2</strong> (slots 427724252, 427724375). Every decision carried a non-empty reasoning trace.</p>
     <h3>The three required questions, from this run</h3>
     <div class="qa"><p class="q">Q1 · What does the processed→confirmed delta tell you?</p><p>Vote-aggregation latency (≥⅔ stake voting) — consensus health, not inclusion speed. This run: <strong>87–272 ms, median 123 ms</strong>. The next hop, confirmed→finalized, took ~12.2 s (rooting), two orders of magnitude larger.</p></div>
@@ -610,6 +680,7 @@ sequenceDiagram
 </main>
 </div>
 
+<script type="application/json" id="run-data">[{"payload":"p0","attempt":1,"landed":false,"slot":null,"sig":"4EAJTBquMcqXnGba4ugwaEFKVgAiafh2eo1gnAVHbnBpF9HkQmWR8R54vfqMUDzQX9VLTYHZ4rNmxy5jhBDyP8cp","tip":10000,"pc":null,"cf":null,"fc":"expired_blockhash","d":{"diagnosis":"The transaction was rejected at the runtime preflight stage with BlockhashNotFound. The embedded blockhash is 200 slots old, which exceeds Solana's ~150-slot validity window. The blockhash has expired and the network will not process the transaction as signed. No program logic, funding, or CU issue is involved — the transaction never reached instruction execution.","triage":"recoverable_by_refresh","remedy":"refresh_blockhash","baseline_remedy":"refresh_blockhash","confidence":0.99,"model":"anthropic/claude-4.6-sonnet-20260217","trace":"The error is \"BlockhashNotFound\" with blockhash_age_slots of 200, which exceeds the ~150-slot validity window on Solana. This is a clear case of a stale blockhash that needs to be refreshed.","rationale":"BlockhashNotFound with an age of 200 slots is an unambiguous expired-blockhash failure (validity window is ~150 slots). The fix is purely mechanical: fetch a current blockhash, re-sign, and resubmit. No other parameters need changing — the tip is at the p75 floor (acceptable), CU usage is irrelevant since execution never started, and there are no instruction-level errors to correct."}},{"payload":"p0","attempt":2,"landed":true,"slot":427724252,"sig":"3xgtCEJiehr7nDgb3Fxwke7aJmCfp5NjUFStb8TsArjS75MfKA7EXzfDrfFLyycCPvniSBYsofKftak8dCjPb7RK","tip":10000,"pc":149,"cf":12216,"fc":null},{"payload":"p1","attempt":1,"landed":false,"slot":null,"sig":"5xr6hGdGjdUrCiQLfkuofGwh7n1LFsu1yQ6b3EXoejCopHvgxCg87RzBNGQ8v5jZPCe6yky8qNwMEyQoQE6APojm","tip":10000,"pc":null,"cf":null,"fc":"compute_exceeded","d":{"diagnosis":"The transaction set a compute unit limit of exactly 1 CU via the ComputeBudget program's SetComputeUnitLimit instruction. This is a grossly misconfigured value — the ComputeBudget instruction itself consumes at least 1 CU, exhausting the entire budget at instruction index [0] before any downstream logic can execute. The error is not a program logic rejection but a direct consequence of an erroneously tiny CU cap.","triage":"recoverable_by_modification","remedy":"raise_cu_limit","baseline_remedy":"raise_cu_limit","confidence":0.99,"model":"anthropic/claude-4.6-sonnet-20260217","trace":"Let me analyze this failure carefully.\n\nThe error is `ComputationalBudgetExceeded` from the ComputeBudget program itself. The cu_limit is set to 1, and cu_used is 1. This is extremely telling - the CU limit has been set to 1, which is essentially nothing. Even the ComputeBudget instruction itself consumes compute units, and with a limit of 1, it immediately fails.\n\nThe fix is clear: raise the CU limit to something reasonable. This is `recoverable_by_modification` with remedy `raise_cu_limit`.\n\nThe blockhash_age_slots is null - not a blockhash issue.\nThe tip is also fine - it's at the p50 floor but below p75, so that's not the culprit either. This is a straightforward case of an absurdly low compute unit limit causing the transaction to fail as soon as the ComputeBudget program tries to execute.","rationale":"The sole cause of failure is cu_limit=1, which is effectively zero headroom. No blockhash staleness, no funding deficit, and no program logic error is involved. Resubmitting the bundle with a realistic compute unit limit (e.g., 200,000–1,400,000 CU depending on the actual instruction complexity) will clear the error entirely. No other changes are strictly required, though bumping the tip above p50 on retry would improve landing probability."}},{"payload":"p1","attempt":2,"landed":true,"slot":427724375,"sig":"23nvfj5HriSqHPpXh8JxGrvYkMjDxJoG5hhMRTeyDXVk6yDMaq8x9ErGCWo7JkS2s6wCd2MubuoYwn4HVdSafS4v","tip":10000,"pc":272,"cf":12336,"fc":null},{"payload":"p2","attempt":1,"landed":false,"slot":null,"sig":"5SyFtbU7mJV8GszmjiWHwjYEDHmB2ThmjLiKamNUEberWnnXEyN6R59peTCvD7MB6rsyiCyzGXdYhRhybaDLonVx","tip":10000,"pc":null,"cf":null,"fc":"bundle_failure","program":"System Program","raw_error":"Custom(1)","program_id":"11111111111111111111111111111111","d":{"diagnosis":"The System Program (11111111111111111111111111111111) rejected instruction index 2 with Custom(0x1) = InsufficientFunds. The source account holds only 47,811,581 lamports (~0.048 SOL) but the transfer instruction demands 1,000,000,000,000,000 lamports (~1,000,000 SOL). The ~6-orders-of-magnitude gap is not a marginal funding deficit — it is almost certainly a denomination/scaling bug in transaction construction (e.g., a token amount passed raw as lamports), or the completely wrong source account was referenced. The transaction is fatally mis-parameterized as written.","triage":"permanent","remedy":"abort","baseline_remedy":"abort","confidence":0.97,"model":"anthropic/claude-4.6-sonnet-20260217","trace":"Let me analyze this failure carefully.\n\n**1. DIAGNOSE:**\n\nThe failing program is `11111111111111111111111111111111` — the Solana System Program.\n\nThe error is `Custom(1)` from the System Program. Looking at the logs:\n```\nTransfer: insufficient lamports 47811581, need 1000000000000000\nProgram 11111111111111111111111111111111 failed: custom program error: 0x1\n```\n\nFor the System Program, `Custom(1)` = `InsufficientFunds`. The account attempting to transfer has only 47,811,581 lamports (~0.0478 SOL) but the instruction is trying to transfer 1,000,000,000,000,000 lamports (1,000,000 SOL). This is a massive shortfall — the source account is underfunded by ~6 orders of magnitude.\n \n**2. TRIAGE:**\n\nThe third instruction in the transaction failed — the first two succeeded (the Memo program and a System Program call for the Jito tip). This is fundamentally a funding problem, but the scale is so extreme that it's not a matter of topping up the account. The transaction is attempting to move 1,000,000 SOL when the source only has 0.0478 SOL available.\n\nThis points to either a misconfiguration in the amount calculation — likely a decimal conversion bug or unit mismatch — or an incorrect source account being specified. Given how wildly off the numbers are, this looks like a permanent logic error rather than something that could be fixed by simply adding more funds. I'm reconsidering the triage categories: the issue could be recoverable through a refresh, modification, or it could be permanent. But with a 1,000,000 SOL requirement against 0.048 SOL available, unless that massive amount is genuinely intentional, this is almost certainly a bug in how the transfer amount was calculated. If it's a misconfiguration, it's recoverable by modification but we can't actually fix the amount in flight, so abort is the right call. Looking at the triage rules more carefully, permanent issues and funding problems with no in-transaction fix both map to abort, which is what we have here regardless of whether this is a parameter error or a genuine funding shortfall.","rationale":"No submission-layer action (blockhash refresh, CU bump, tip increase, hold-and-resubmit) can correct a transfer amount that is ~20,000× larger than any realistic wallet balance and almost certainly reflects a construction-time coding error. The fix must happen in the application layer (correct amount denomination and/or source account). Retrying the bundle as-is or with any Argus-level tweak will deterministically reproduce the same failure. Aborting is the correct operational response to allow the upstream system to fix the root cause."}},{"payload":"p3","attempt":1,"landed":false,"slot":null,"sig":"4acKiTYbWmHkHxSNC7WHTDAUWTPcpHjFTseAkRotWkuUxgU9NbquPDoWSkTfcoJYexhqh8ihY5kxUEPkMYYyrcps","tip":10000,"pc":null,"cf":null,"fc":"bundle_failure","program":"SPL-Memo","raw_error":"InvalidInstructionData","program_id":"MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr","d":{"diagnosis":"Instruction index 2 is a second invocation of the SPL Memo program. The Memo program rejected it because its instruction data is not valid UTF-8 — the log explicitly states \"Invalid UTF-8, from byte 0\", meaning the very first byte is non-UTF-8 binary. This is a transaction construction error: raw binary data (e.g. a pubkey, hash, or serialised struct) was incorrectly placed in a Memo instruction instead of a valid UTF-8 string.","triage":"permanent","remedy":"abort","baseline_remedy":"abort","confidence":0.98,"model":"anthropic/claude-4.6-sonnet-20260217","trace":"Let me analyze this failure carefully.\n\nThe failing program is the Memo program (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`), and the error is `InvalidInstructionData` on instruction index 2 (0-indexed).\n\nLooking at the logs:\n1. Instruction 0: Memo program succeeds with memo \"argus-run-1781958744615-p3-jito-1\" ✓\n2. Instruction 1: System program (11111111111111111111111111111111) succeeds ✓\n3. Instruction 2: The second Memo instruction fails because the data passed to it isn't valid UTF-8 — the error originates from an invalid byte at position 0, indicating the entire content is binary rather than a proper UTF-8 string. This is a permanent failure caused by malformed memo data at the source.\n\nRetrying with a refreshed blockhash or adjusted CU limits won't resolve this since the problem is in how the instruction data was constructed. The transaction should be aborted — this is a fundamental construction error that no runtime parameter adjustment can fix. The compute usage is minimal at 14,390 CU, and the tip of 10,000 lamports exceeds the p75 floor, so neither of those factors are contributing to the failure.","rationale":"The failure is caused by malformed instruction data baked into the transaction at build time. No runtime adjustment — blockhash refresh, CU raise, or tip bump — can alter the bytes that constitute the memo payload. The bug must be fixed in the transaction builder before any retry is meaningful. Resubmitting the same bundle will produce the exact same rejection. Aborting is the correct and only productive action."}},{"payload":"p4","attempt":1,"landed":false,"slot":null,"sig":"4t54vYjgWwN3fwLtAyw1Yz2hPgJ2jRun9uK3PCHakyKjfiChm5u1HX2LdXxhwKasYLnJuiFrnegdRfU11urTevCC","tip":10000,"pc":null,"cf":null,"fc":"bundle_failure","program":"SPL-Token","raw_error":"Custom(12)","program_id":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","d":{"diagnosis":"The SPL Token program (TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA) rejected instruction index 2 with Custom(12) = TokenError::InvalidInstruction. The program consumed only 171 CUs and failed immediately at instruction decode, meaning the instruction discriminator or data layout is wholly unrecognised by this program. The two preceding instructions (Memo, System) succeeded normally; the failure is isolated to the malformed Token instruction.","triage":"permanent","remedy":"abort","baseline_remedy":"abort","confidence":0.97,"model":"anthropic/claude-4.6-sonnet-20260217","trace":"Let me analyze this failure carefully.\n\n**1. DIAGNOSE**\n\nThe failing program is `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` — this is the SPL Token program (Token Program).\n\nThe error is `Custom(12)` which in hex is `0xc`. The program log explicitly says: `\"Program log: Error: Invalid instruction\"`.\n\nIn the SPL Token program, `Custom(12)` maps to `TokenError::InvalidInstruction` — the instruction discriminator/layout sent to the SPL Token program is not a recognized or valid instruction. \n\nThis isn't a stale blockhash, funding issue, or compute unit problem — the instruction itself is malformed or unrecognized by this version of the Token program. The transaction executed two instructions successfully (Memo and System programs), but the third instruction targeting the SPL Token program failed with an invalid instruction error. Compute units are barely touched at 13,460, so there's no resource constraint here.\n\nThe SPL Token program rejected this outright after consuming only 171 CUs, meaning it failed during instruction parsing itself. The instruction discriminator doesn't match any known token instruction, or the data is malformed. This is a permanent failure — no retry, blockhash refresh, tip increase, or CU bump will fix it. The instruction construction is broken and needs to be rebuilt.","rationale":"InvalidInstruction is a hard decode-time rejection by the SPL Token program — it does not correspond to a stale blockhash, insufficient funds, or a CU limit breach. CU usage (13 460 used vs no limit pressure), tip (10 000 lam \u003e p75 of 6 425), and blockhash age are all healthy. The instruction construction itself is broken (wrong discriminator, wrong account layout, or a Token-2022 instruction sent to the classic Token program). No retry variant — refreshed blockhash, higher tip, or raised CU limit — will change the outcome. The bundle must be aborted and the Token instruction rebuilt correctly before resubmission."}},{"payload":"p5","attempt":1,"landed":false,"slot":null,"sig":"4BHz2Gs9ax47TuU8fiTziHJAe4aLYRzAiiMbbizDnFZLkY27spCqqyrDCUR8ZnB8mkpwe2hhoYjf1i5UJXFokoF5","tip":10000,"pc":null,"cf":null,"fc":"bundle_failure","program":"Orca Whirlpool","raw_error":"Custom(101)","program_id":"whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc","d":{"diagnosis":"The Orca Whirlpool program (Anchor) rejected instruction index 2 with InstructionFallbackNotFound (Custom 101). The 8-byte instruction discriminator embedded in the instruction data did not match any known handler in the program. Anchor fell through to its fallback path, which Whirlpool does not implement, causing an immediate hard failure. The instruction data is malformed — likely built against a stale/wrong IDL or with an incorrect method name. CU usage (14,716), tip (10,000 lamports), and blockhash are all non-issues.","triage":"permanent","remedy":"abort","baseline_remedy":"abort","confidence":0.98,"model":"anthropic/claude-4.6-sonnet-20260217","trace":"Let me analyze this failure carefully.\n\n**1. DIAGNOSE**\n\nThe failing program is `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` — this is the **Orca Whirlpool** program.\n\nThe error is `Custom(101)` which in Anchor is `InstructionFallbackNotFound` (Error Code 101). The log confirms this explicitly:\n```\n\"Program log: AnchorError occurred. Error Code: InstructionFallbackNotFound. Error Number: 101. Error Message: Fallback functions are not supported.\"\n```\n\nThe instruction discriminator I'm sending doesn't match any handler in the Whirlpool program. Anchor derives these 8-byte discriminators from instruction names, and when none match, it attempts a fallback handler that doesn't exist. This typically happens when the discriminator bytes are malformed, the program version has changed and the instruction no longer exists, or the instruction data is encoded incorrectly. The first two instructions succeeded fine, so the issue is specifically with how I'm constructing the Whirlpool instruction.\n\nThis is a permanent failure — not a blockhash issue, compute unit problem, or funding issue. The instruction itself is fundamentally malformed or targeting the wrong discriminator. Retrying with the same data will always fail, so I need to rebuild the transaction with the correct instruction data and discriminator.\n```","rationale":"An unrecognised instruction discriminator is a structural defect in the transaction itself: the program cannot route the call regardless of how many times it is retried or what blockhash/tip is used. The fix requires rebuilding the Whirlpool instruction with the correct discriminator, which means aborting the current bundle and correcting the instruction construction upstream before any resubmission."}},{"payload":"p6","attempt":1,"landed":true,"slot":427724772,"sig":"4Mo3qykcFBu2UGkQq7GvJwQBDBVKRADJUuzMw3mR7nHuPCo7uJtWzC6ffp5f7JdKF3qJMvGcyKDLT8p3NQ6not7c","tip":10000,"pc":114,"cf":12279,"fc":null},{"payload":"p7","attempt":1,"landed":true,"slot":427724810,"sig":"3yGkRyXFQd4fu4u813Yi1nNA8UkRwDAkp7QBAmNpWXVaB1d7jVadnKW4LZoAo65FsEA55SWtT7dbdiVxwyZwTTJM","tip":10000,"pc":101,"cf":12441,"fc":null},{"payload":"p8","attempt":1,"landed":true,"slot":427724848,"sig":"5nJsSmJYDv8sm1Db47ghyEN9KyiPwxqdgz8jrrEK4DjmHWL3oTdxwZGJGmdBywy3bhK5SHSRpcik6fJ1Ba51rBKd","tip":10000,"pc":123,"cf":11982,"fc":null},{"payload":"p9","attempt":1,"landed":true,"slot":427724884,"sig":"5GbTc1H27wCB2ewkK9ENdm7RgHZSigK97W8J3q1YNEssvN5fBtTdy4RCiVsvgPsArqNcr3CY2sEwajTBLo4z9yx2","tip":10000,"pc":138,"cf":12019,"fc":null},{"payload":"p10","attempt":1,"landed":true,"slot":427724921,"sig":"4AHtc76SRmChgEwh2ueWwm69D3aaUJTaogMcyxDhm7UTzR22KpMiAqGcqVe4FJ9tsG4Xnc3yvghE8ddJEcJd1Num","tip":10000,"pc":87,"cf":13270,"fc":null},{"payload":"p11","attempt":1,"landed":true,"slot":427724960,"sig":"4jmCFFW2ig5HZVmz3vQk5inWdASt8vmPJq1RruSsGqyzJZpRwHhVxqRymQ96DJBWYTf6qJpKtsJomKNYCcCEZJpB","tip":10000,"pc":126,"cf":12065,"fc":null},{"payload":"p12","attempt":1,"landed":true,"slot":427725000,"sig":"4Z8yFvLZEQFauwKqD3mbqseESe8QsdaXsyaPFEaJnNyA2widphLJjeRQooSPuwoyuqJNzFagDVNob7jYVhbEBYgq","tip":10000,"pc":98,"cf":11798,"fc":null}]</script>
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
   mermaid.initialize({
@@ -702,6 +773,94 @@ sequenceDiagram
 
     // ---- load reveal ----
     requestAnimationFrame(function(){ requestAnimationFrame(function(){ document.body.classList.add('lit'); }); });
+  })();
+</script>
+<script>
+  (function(){
+    var el = document.getElementById('run-data');
+    if(!el) return;
+    var data; try { data = JSON.parse(el.textContent); } catch(e){ return; }
+    function esc(s){ s=String(s==null?'':s); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    var txUrl = function(sig){ return 'https://solscan.io/tx/'+sig; };
+    var blockUrl = function(slot){ return 'https://solscan.io/block/'+slot; };
+
+    // ---- lifecycle explorer ----
+    var exp = document.getElementById('explorer');
+    if(exp){
+      var maxTot = 1;
+      data.forEach(function(r){ if(r.landed){ var t=(r.pc||0)+(r.cf||0); if(t>maxTot) maxTot=t; } });
+      var h='';
+      data.forEach(function(r,i){
+        var faulted=!r.landed, detail=!!r.d;
+        h+='<div class="exp-row" data-i="'+i+'">';
+        h+='<div class="exp-head'+(detail?' has-detail':'')+'">';
+        h+='<span class="exp-pl">'+esc(r.payload)+(r.attempt>1?'·'+r.attempt:'')+'</span>';
+        h+='<span class="exp-status '+(faulted?'faulted':'landed')+'">'+(faulted?'FAULTED':'LANDED')+'</span>';
+        h+='<div class="exp-mid">';
+        if(faulted){
+          h+='<span class="mini-lbl">'+esc(r.fc||'')+(r.program?(' · '+esc(r.program)+' '+esc(r.raw_error)):'')+'</span>';
+        } else {
+          var pc=r.pc||0, cf=r.cf||0;
+          h+='<a class="exp-slot" href="'+blockUrl(r.slot)+'" target="_blank" rel="noopener">slot '+r.slot+'</a>';
+          h+='<div class="minitrack" title="P→C '+pc+'ms · C→F '+cf+'ms"><span class="pc" style="width:'+(pc/maxTot*100)+'%"></span><span class="cf" style="width:'+(cf/maxTot*100)+'%"></span></div>';
+          h+='<span class="mini-lbl">'+pc+'ms / '+(cf/1000).toFixed(1)+'s</span>';
+        }
+        h+='</div>';
+        h+='<span class="exp-caret">'+(detail?'›':'')+'</span>';
+        h+='</div>';
+        if(detail){
+          var d=r.d;
+          h+='<div class="exp-detail">';
+          h+='<p class="exp-dx">'+esc(d.diagnosis)+'</p>';
+          h+='<div class="exp-meta"><span>triage <b>'+esc(d.triage)+'</b></span><span>agent <b>'+esc(d.remedy)+'</b></span><span>baseline <b>'+esc(d.baseline_remedy)+'</b></span><span>confidence <b>'+esc(d.confidence)+'</b></span><span>model <b>'+esc(d.model)+'</b></span>'+(r.sig?'<span><a href="'+txUrl(r.sig)+'" target="_blank" rel="noopener">tx ↗</a></span>':'')+'</div>';
+          h+='<div class="exp-tracelabel">Reasoning trace</div><div class="exp-trace">'+esc(d.trace)+'</div>';
+          h+='</div>';
+        }
+        h+='</div>';
+      });
+      exp.innerHTML=h;
+      exp.querySelectorAll('.exp-head.has-detail').forEach(function(hd){
+        hd.setAttribute('role','button'); hd.setAttribute('tabindex','0');
+        function tog(){ hd.parentNode.classList.toggle('open'); }
+        hd.addEventListener('click', tog);
+        hd.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(); } });
+      });
+    }
+
+    // ---- blind vs seen ----
+    var vsx = document.getElementById('vsx');
+    if(vsx){
+      var cases = data.filter(function(r){ return r.program; });
+      var tabs = vsx.querySelector('.vsx__tabs');
+      var detail = document.getElementById('vsxDetail');
+      function render(idx){
+        cases.forEach(function(_,i){ tabs.children[i].setAttribute('aria-selected', i===idx?'true':'false'); });
+        var r=cases[idx], d=r.d;
+        detail.innerHTML='<div class="vsx__prog">'+esc(r.program)+'</div>'
+          +'<div class="vsx__err">raw error · '+esc(r.raw_error)+'</div>'
+          +'<p class="vsx__dx">'+esc(d.diagnosis)+'</p>'
+          +'<span class="vsx__conf">confidence '+esc(d.confidence)+'</span>'
+          +'<div class="vsx__tracelabel">Reasoning trace</div><div class="vsx__trace">'+esc(d.trace)+'</div>';
+      }
+      cases.forEach(function(r,i){
+        var b=document.createElement('button');
+        b.className='vsx__tab'; b.setAttribute('role','tab'); b.type='button'; b.textContent=r.program;
+        b.addEventListener('click', function(){ render(i); });
+        tabs.appendChild(b);
+      });
+      if(cases.length) render(0);
+    }
+
+    // ---- spine play, to scale ----
+    var play=document.getElementById('spinePlay'), head=document.getElementById('scaleHead');
+    if(play && head){
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      play.addEventListener('click', function(){
+        if(reduce){ head.style.transition='none'; head.classList.add('run'); head.style.left='100%'; return; }
+        head.classList.remove('run'); head.style.transition='none'; head.style.left='0'; void head.offsetWidth;
+        head.classList.add('run'); head.style.transition='left 3.6s linear'; head.style.left='100%';
+      });
+    }
   })();
 </script>
 </body>
