@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Argus — Architecture Document</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1b1f24;
+    --muted: #5b6470;
+    --line: #e3e7ec;
+    --accent: #3b4fd6;      /* indigo */
+    --accent-soft: #eef0fe;
+    --amber: #b4690e;
+    --amber-soft: #fdf3e3;
+    --green: #1a7f48;
+    --code-bg: #f5f7fa;
+    --sidebar: 280px;
+    --maxw: 880px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  code, pre, .mono { font-family: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.86em; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* layout */
+  .wrap { display: flex; align-items: flex-start; }
+  nav.toc {
+    position: sticky; top: 0; align-self: flex-start;
+    width: var(--sidebar); height: 100vh; overflow-y: auto;
+    border-right: 1px solid var(--line); padding: 28px 20px; background: #fbfcfe;
+    flex: 0 0 var(--sidebar);
+  }
+  nav.toc .brand { font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; }
+  nav.toc .brand small { display:block; font-weight: 500; color: var(--muted); font-size: 0.72rem; margin-top: 4px; }
+  nav.toc ol { list-style: none; padding: 0; margin: 18px 0 0; counter-reset: s; }
+  nav.toc li { margin: 2px 0; }
+  nav.toc a { display: block; padding: 5px 10px; border-radius: 6px; color: var(--fg); font-size: 0.88rem; }
+  nav.toc a:hover { background: var(--accent-soft); text-decoration: none; }
+  main { flex: 1 1 auto; min-width: 0; padding: 40px 48px 120px; max-width: calc(var(--maxw) + 96px); }
+
+  header.doc { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 8px; }
+  header.doc h1 { font-size: 2.1rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header.doc .sub { color: var(--muted); font-size: 1.05rem; margin: 0 0 18px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge { font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .badge.green { background: #e6f5ec; color: var(--green); }
+  .badge.amber { background: var(--amber-soft); color: var(--amber); }
+
+  section { padding-top: 38px; }
+  h2 { font-size: 1.5rem; letter-spacing: -0.01em; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-soft); }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  h3 { font-size: 1.12rem; margin: 26px 0 6px; }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
+  th { background: #f3f5f9; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbfc; }
+
+  .callout { border-radius: 10px; padding: 14px 18px; margin: 18px 0; border: 1px solid var(--line); }
+  .callout .k { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
+  .callout.thesis { background: var(--accent-soft); border-color: #d7dcfb; }
+  .callout.thesis .k { color: var(--accent); }
+  .callout.warn { background: var(--amber-soft); border-color: #f0dcc0; }
+  .callout.warn .k { color: var(--amber); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: #fcfdff; }
+  .card h4 { margin: 0 0 4px; font-size: 0.98rem; }
+  .card .meta { color: var(--muted); font-size: 0.8rem; }
+
+  figure { margin: 22px 0; }
+  figure.diagram { border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: #fcfdff; text-align: center; overflow-x: auto; }
+  figcaption { color: var(--muted); font-size: 0.82rem; margin-top: 10px; text-align: center; }
+  pre.mermaid { background: transparent; }
+
+  .kv { font-size: 0.86rem; }
+  .pill { display:inline-block; font-size:0.72rem; padding:1px 7px; border-radius:5px; background:var(--code-bg); color:var(--muted); margin-left:6px; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 36px 0; }
+  footer { color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--line); padding-top: 20px; }
+
+  @media (max-width: 880px) {
+    nav.toc { display: none; }
+    main { padding: 28px 20px 80px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Argus<small>Smart Transaction Stack · Architecture</small></div>
+  <ol>
+    <li><a href="#thesis">0 · Thesis</a></li>
+    <li><a href="#architecture">1 · System Architecture</a></li>
+    <li><a href="#components">2 · Key Components</a></li>
+    <li><a href="#dataflow">3 · Data Flow</a></li>
+    <li><a href="#infra">4 · Infrastructure Decisions</a></li>
+    <li><a href="#failure">5 · Failure Handling</a></li>
+    <li><a href="#agent">6 · AI Agent</a></li>
+    <li><a href="#evidence">7 · Operational Evidence</a></li>
+    <li><a href="#adrs">Appendix · ADR Index</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <h1>Argus — Architecture</h1>
+  <p class="sub">A Solana smart-transaction stack. <strong>Core (Rust) = the eyes</strong>; <strong>Agent (TypeScript) = the judgment</strong>; the HTTP boundary <em>is</em> the architecture.</p>
+  <div class="badges">
+    <span class="badge green">Live on mainnet</span>
+    <span class="badge">Graded run: 15 sent / 6 failed / 9 landed</span>
+    <span class="badge">0.000135 SOL total</span>
+    <span class="badge">Yellowstone gRPC · Jito bundles · OpenRouter</span>
+    <span class="badge amber">Agent owns failure diagnosis</span>
+  </div>
+</header>
+
+<!-- 0 THESIS -->
+<section id="thesis">
+  <h2><span class="num">0</span>Thesis</h2>
+  <p>Argus — named for <em>Argus Panoptes</em>, the hundred-eyed watchman — observes the Solana network in real time, submits Jito bundles intelligently, tracks each submission across commitment levels, and delegates exactly <strong>one</strong> operational decision to an AI agent: <strong>failure diagnosis</strong>.</p>
+  <div class="callout thesis">
+    <span class="k">The one-sentence architecture</span>
+    Two services over HTTP/JSON. A Rust <strong>Core</strong> holds every deterministic, network-facing concern (streaming, leader window, bundles, tips, lifecycle, baseline classification, remedy execution). A TypeScript <strong>Agent</strong> holds a single Claude-powered judgment call. The process boundary is the literal embodiment of the challenge's required <em>"clean separation between AI layer and core transaction stack."</em>
+  </div>
+  <p>The agent's mandate is deliberately narrow and deliberately <em>un-scriptable</em>: it reads the <strong>raw failure surface</strong> of a rejected transaction — the failing program, its structured <code>instruction_error</code>, and its program logs — and returns an open-ended <strong>Diagnosis</strong>, a <strong>Triage</strong>, and the executable <strong>Remedy</strong>. It is <em>not</em> a lookup over a fixed failure-class table; that table exists only as a <strong>baseline contrast</strong> the agent's reasoning is measured against (see <a href="#agent">§6</a> and <a href="#adrs">ADR&nbsp;0012</a>).</p>
+</section>
+
+<!-- 1 ARCHITECTURE -->
+<section id="architecture">
+  <h2><span class="num">1</span>System Architecture</h2>
+  <p>Argus is a monorepo of two runtimes deployed via <code>docker-compose</code>, talking only over HTTP/JSON. Rust earns its place on the Yellowstone gRPC firehose — tokio gives idiomatic bounded-channel backpressure and reconnection (the one genuinely hard infrastructure feature the challenge names). TypeScript hosts the agent for LLM-ecosystem ergonomics and fast prompt iteration. Neither leaks into the other: the agent holds zero transaction logic, the Core holds zero model logic. <span class="pill">ADR 0001</span></p>
+
+  <figure class="diagram">
+  <pre class="mermaid">
+flowchart LR
+  subgraph EXT["External infrastructure"]
+    direction TB
+    YS["SolInfra Yellowstone gRPC<br/>slot + tx streams"]
+    RPC["SolInfra RPC<br/>blockhash · simulate · balance"]
+    SE["Jito SearcherService gRPC<br/>getNextScheduledLeader"]
+    TF["Jito Tip Floor REST"]
+    BE["Jito Block Engine<br/>sendBundle · 8 regions"]
+    OR["OpenRouter<br/>model access"]
+    SOL["Solana mainnet"]
+  end
+  subgraph CORE["Core — Rust · the eyes"]
+    direction TB
+    STR["streaming"]
+    LDR["leader"]
+    TIP["tip"]
+    BDL["bundle"]
+    LFC["lifecycle tracker"]
+    FAIL["failure / classify"]
+    ACL["agent_client"]
+    DB[("SQLite<br/>source of truth")]
+  end
+  subgraph AG["Agent — TypeScript · the judgment"]
+    direction TB
+    HTTP["/health · /decide/"]
+    DEC["decide()"]
+  end
+  YS --> STR --> LFC --> DB
+  RPC --> FAIL
+  SE --> LDR
+  TF --> TIP
+  BDL --> BE --> SOL
+  FAIL --> ACL
+  ACL -->|"HTTP/JSON · raw failure surface"| HTTP --> DEC --> OR
+  ACL --> DB
+  LDR -.timing.-> BDL
+  TIP --> BDL
+  </pre>
+  <figcaption>Figure 1 — System context. The Core touches every network surface; the Agent touches only the model, reached over one HTTP contract.</figcaption>
+  </figure>
+
+  <h3>Deployment view</h3>
+  <ul>
+    <li><strong>Repo layout:</strong> <code>core/</code> (Rust), <code>agent/</code> (TypeScript), <code>docs/</code> (ADRs + plan), <code>logs/</code> (SQLite + JSONL + Markdown Lifecycle Log).</li>
+    <li><strong>Real path runs on mainnet</strong> with SolInfra-sponsored credits and a dedicated low-balance keypair — Jito's Block Engine only lands bundles on mainnet, and judges verify slot numbers on explorers. Devnet is a destructive sandbox only. <span class="pill">ADR 0002</span></li>
+    <li><strong>One contract:</strong> <code>Core → Agent</code> is a single <code>POST /decide</code>; a scored run hard-gates on the agent's <code>/health</code> and refuses to start if it is down.</li>
+  </ul>
+</section>
+
+<!-- 2 COMPONENTS -->
+<section id="components">
+  <h2><span class="num">2</span>Key Components</h2>
+
+  <h3>Core (Rust) — deterministic, network-facing</h3>
+  <table>
+    <thead><tr><th>Module</th><th>Responsibility</th><th>Key surface</th></tr></thead>
+    <tbody>
+      <tr><td><code>streaming</code></td><td>Yellowstone slot + transaction subscriptions; resilient driver with reconnect + backpressure.</td><td><code>subscribe_slots</code>, <code>track_lifecycle</code>, <code>resilient_subscribe</code>, <code>StreamMetrics</code></td></tr>
+      <tr><td><code>leader</code></td><td>Detect the next Jito leader window over gRPC (soft timing signal, never a gate).</td><td><code>next_scheduled_leader</code>, <code>NextLeader</code></td></tr>
+      <tr><td><code>tip</code></td><td>Derive the base Tip from the live Jito Tip Floor percentile; clamp to sane bounds.</td><td><code>fetch_tip_lamports</code>, percentiles <code>[25,50,75,95,99]</code></td></tr>
+      <tr><td><code>bundle</code></td><td>Build the all-or-nothing Jito bundle (payload + tip transfer); 8-region concurrent submit.</td><td><code>build_bundle</code>, <code>submit_all_regions</code>, <code>inflight_status</code></td></tr>
+      <tr><td><code>rpc</code></td><td>Minimal JSON-RPC: blockhash, <code>simulateTransaction</code>, balance, aged blockhash for injection.</td><td><code>get_latest_blockhash</code>, <code>simulate_transaction</code>, <code>SimResult</code></td></tr>
+      <tr><td><code>failure</code></td><td>Fault injection, baseline classification, remedy execution, and the <code>Policy</code> seam (Local ↔ Agent).</td><td><code>classify_failure</code>, <code>apply_remedy</code>, <code>Policy</code></td></tr>
+      <tr><td><code>agent_client</code></td><td>The one HTTP boundary: send the raw failure surface, receive the Decision.</td><td><code>AgentClient</code>, <code>FailureContext</code>, <code>Decision</code></td></tr>
+      <tr><td><code>storage</code></td><td>SQLite source of truth; first-observation-wins stage stamps; idempotent column guards.</td><td><code>Store</code>, <code>record_submission</code>, <code>mark_stage</code>, <code>record_decision</code></td></tr>
+      <tr><td><code>export</code></td><td>Render the Lifecycle Log (JSONL + two-part Markdown) purely from SQLite.</td><td><code>write_lifecycle_log</code>, <code>run_counts</code></td></tr>
+      <tr><td><code>main</code></td><td>Entry + env-flag dispatch + orchestrators (the Run, single-lifecycle, injection).</td><td><code>run_orchestrator</code>, <code>submit_and_track_one</code>, <code>injection_run</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Agent (TypeScript) — the single judgment</h3>
+  <ul>
+    <li><code>index.ts</code> — Express service: <code>GET /health</code> and <code>POST /decide</code> (zod-validated in, JSON out), default port <code>8787</code>.</li>
+    <li><code>decide.ts</code> — the OpenRouter call: builds the prompt, requests reasoning, parses the <code>submit_decision</code> tool call.</li>
+    <li><code>types.ts</code> — zod schemas shared in spirit with the Rust types (snake_case): <code>FailureContext</code>, <code>Remedy</code>, <code>Triage</code>.</li>
+  </ul>
+
+  <h3>Storage — the Lifecycle Log is the deliverable</h3>
+  <p>SQLite is the single source of truth; JSONL and Markdown are exports rendered from it. Two tables:</p>
+  <div class="grid">
+    <div class="card">
+      <h4><code>submissions</code></h4>
+      <div class="meta">one row per attempt</div>
+      <p class="kv"><code>run_id</code>, <code>attempt</code>, <code>nonce</code>, <code>bundle_id</code>, <code>signature</code>, <code>tip_lamports</code>, <code>submitted_at</code>, <code>landed_slot</code>, <code>processed_at</code>, <code>confirmed_at</code>, <code>finalized_at</code>, <code>failure_class</code> · <code>UNIQUE(run_id, attempt, nonce)</code></p>
+    </div>
+    <div class="card">
+      <h4><code>decisions</code></h4>
+      <div class="meta">one row per agent decision</div>
+      <p class="kv"><code>run_id</code>, <code>attempt</code>, <code>failure_class</code> (baseline), <code>remedy</code>, <code>baseline_remedy</code>, <code>diagnosis</code>, <code>triage</code>, <code>rationale</code>, <code>confidence</code>, <code>reasoning_trace</code>, <code>model</code>, <code>decided_at</code></p>
+    </div>
+  </div>
+  <p>A <strong>Run</strong> is identified by a <em>prefix</em>, not a column: the session is <code>run-{ts}</code> and payload <em>k</em> runs under child <code>run_id = run-{ts}-p{k}</code>, so <code>(run_id, attempt)</code> stays unique per payload with zero schema change. Run-scoped queries use <code>WHERE run_id LIKE 'run-{ts}-%'</code>. <span class="pill">ADR 0011</span></p>
+</section>
+
+<!-- 3 DATA FLOW -->
+<section id="dataflow">
+  <h2><span class="num">3</span>Data Flow Between Services</h2>
+
+  <h3>Happy path — submit → track → persist</h3>
+  <p>The subscription opens <strong>before</strong> the bundle is submitted, so Inclusion is never missed. Tracking is bounded by a 60s timeout and reconciled afterward against <code>getSignatureStatuses</code> in case a Landed frame was dropped.</p>
+  <figure class="diagram">
+  <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant O as Orchestrator
+  participant L as leader / tip
+  participant B as bundle
+  participant J as Jito Block Engine
+  participant Y as Yellowstone
+  participant DB as SQLite
+  O->>L: next_scheduled_leader() · fetch_tip_lamports(p75)
+  O->>B: build_bundle(payload, tip)
+  O->>DB: record_submission
+  O->>Y: subscribe slot + tx(signature) — BEFORE submit
+  Y-->>O: on_subscribed
+  O->>J: submit_all_regions(bundle)
+  Y-->>O: Landed (slot)
+  O->>DB: set_landed_slot
+  Y-->>O: Processed → Confirmed → Finalized
+  O->>DB: mark_stage (first-observation-wins)
+  Note over O,DB: log P→C, C→F deltas · reconcile via getSignatureStatuses
+  </pre>
+  <figcaption>Figure 2 — Inclusion comes from the transaction stream; commitment progression comes from the slot stream. <span class="mono">ADR 0004</span></figcaption>
+  </figure>
+
+  <h3>Lifecycle states</h3>
+  <figure class="diagram">
+  <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Submitted
+  Submitted --> Landed: tx-subscription (Inclusion)
+  Submitted --> NonLanding: never included (faulted bundle)
+  Landed --> Processed: slot replayed
+  Processed --> Confirmed: greater-equal 2/3 stake voted
+  Confirmed --> Finalized: rooted (~31 blocks)
+  Finalized --> [*]
+  NonLanding --> [*]
+  </pre>
+  <figcaption>Figure 3 — "Landed" (binary inclusion) is distinct from any commitment level. A faulted bundle never lands and is recorded with an absent <span class="mono">landed_slot</span> (rendered <span class="mono">—</span>).</figcaption>
+  </figure>
+
+  <h3>Failure path — diagnose → remedy → resubmit</h3>
+  <p>A Jito bundle is all-or-nothing, so a faulted transaction never lands and leaves no on-chain <code>meta.err</code>. The one deterministic pre-submit source of <code>{err, logs, unitsConsumed}</code> is a preflight <code>simulateTransaction</code> — and that simulation output <em>is</em> the raw failure surface handed to the agent.</p>
+  <figure class="diagram">
+  <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant O as injection_run
+  participant B as bundle
+  participant R as rpc.simulate
+  participant C as classify (baseline)
+  participant A as Agent → OpenRouter
+  participant DB as SQLite
+  O->>B: send faulted attempt-1 (free, non-landing)
+  O->>R: simulateTransaction
+  R-->>O: err · instruction_error · logs · units
+  O->>C: classify_failure → baseline class + remedy
+  O->>A: POST /decide (raw surface: instruction_error + logs + program_id)
+  A-->>O: diagnosis · triage · remedy · confidence · reasoning_trace
+  O->>DB: record_decision (agent + baseline contrast)
+  alt remedy = abort
+    O-->>O: stop — no retry
+  else recoverable
+    O->>B: attempt-2 (fresh blockhash / raised CU / bumped tip)
+    B-->>O: Landed
+  end
+  </pre>
+  <figcaption>Figure 4 — The agent receives the raw surface, not the baseline verdict. The four-class classifier runs in parallel only to populate the contrast column. <span class="mono">ADR 0010 · 0012</span></figcaption>
+  </figure>
+</section>
+
+<!-- 4 INFRA -->
+<section id="infra">
+  <h2><span class="num">4</span>Infrastructure Decisions</h2>
+  <p>Every decision below is recorded as an ADR in the repo. The load-bearing ones:</p>
+  <table>
+    <thead><tr><th>Decision</th><th>What &amp; why</th><th>ADR</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Mainnet, not devnet</strong></td><td>Jito's Block Engine only lands bundles on mainnet, and slots must be explorer-verifiable. SolInfra credits remove the cost argument; a dedicated low-balance keypair caps exposure.</td><td>0002</td></tr>
+      <tr><td><strong>Yellowstone via SolInfra</strong></td><td>Slot + transaction streaming over a SolInfra Yellowstone gRPC endpoint (separate gRPC-scoped <code>x-token</code> from the RPC key). Confirmation comes from streams, never RPC polling.</td><td>0004</td></tr>
+      <tr><td><strong>Jito bundles are the scored path</strong></td><td>Real <code>sendBundle</code> with multi-region fan-out + leader-window timing. A Jito <code>x-jito-auth</code> UUID (2 req/s/region) is what makes the Block Engine actually <em>forward</em> bundles. Helius Sender is a keyless backstop (plain tx), never the scored path.</td><td>0007</td></tr>
+      <tr><td><strong>Dynamic tips from the Tip Floor</strong></td><td>Base tip = a live Tip-Floor percentile (default p75), rotated across published tip accounts — never hardcoded. The agent may <em>raise</em> the tip as a remedy, but base tipping stays deterministic in Core.</td><td>0005</td></tr>
+      <tr><td><strong>Leader window via searcher gRPC</strong></td><td><code>getNextScheduledLeader</code> is gRPC-only (absent from Jito's HTTP API). A minimal vendored <code>searcher.proto</code> (read-only RPCs, NoAuth) avoids pulling a conflicting SDK crate. Timing is a soft optimization, never a gate.</td><td>0008</td></tr>
+      <tr><td><strong>Streaming resilience</strong></td><td>A spawned receive task feeds a <strong>bounded mpsc channel</strong>; the consumer drains on the caller task. Exponential-backoff reconnect (500ms → 30s), a cumulative reconnect ceiling, and shed-and-count on a full channel give genuine backpressure.</td><td>0009</td></tr>
+      <tr><td><strong>Model access via OpenRouter</strong></td><td>OpenAI-compatible API normalizes reasoning traces (<code>message.reasoning</code>) and structured output (a <code>submit_decision</code> tool) across providers, so the model is env-configurable and rotatable mid-run.</td><td>0006</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <span class="k">A note on infra discipline</span>
+    The Core was built with a "zero new crates" posture where practical — the searcher gRPC client is generated at build time from a hand-trimmed proto, and reconnect/backoff is hand-rolled rather than pulled from a dependency. This keeps the network surface auditable and the build reproducible.
+  </div>
+</section>
+
+<!-- 5 FAILURE -->
+<section id="failure">
+  <h2><span class="num">5</span>Failure-Handling Strategy</h2>
+  <p>Failure handling is the heart of the system — happy-path-only submissions are explicitly disqualified. Argus handles failure on two axes: a <strong>bounded</strong> four-class baseline (for remedy variation) and an <strong>unbounded</strong> program-error tail (for diagnosis variation).</p>
+
+  <h3>The bounded baseline — four classes</h3>
+  <p>A deterministic taxonomy, induced by fault injection and classified from the preflight simulation's structured <code>instruction_error</code> (not string-matching). Each maps to a default remedy that Core can execute on its own when the agent is unreachable.</p>
+  <table>
+    <thead><tr><th>Failure class</th><th>Induced by</th><th>Determinism</th><th>Default remedy</th></tr></thead>
+    <tbody>
+      <tr><td>Expired Blockhash</td><td>Sign against a real blockhash aged ~200 slots (past the ~150 window)</td><td>Deterministic</td><td>refresh blockhash</td></tr>
+      <tr><td>Compute Exceeded</td><td>CU limit set to 1, below instruction need</td><td>Deterministic</td><td>raise CU limit (from re-simulated need)</td></tr>
+      <tr><td>Bundle Failure</td><td>Include a failing instruction</td><td>Deterministic</td><td>abort / rebuild</td></tr>
+      <tr><td>Fee Too Low</td><td>Tip below live floor under contention</td><td>Probabilistic</td><td>bump tip</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The unbounded tail — where a classifier goes blind</h3>
+  <p>One identical malformed instruction (<code>[0xff; 8]</code>, zero accounts) sent to three different real programs produces three <em>distinct</em> errors that the four-class baseline collapses to one blind <code>bundle_failure → abort</code>. This is the case that proves reasoning beats lookup.</p>
+  <figure class="diagram">
+  <pre class="mermaid">
+flowchart TB
+  I["one malformed instruction<br/>[0xff;8] · zero accounts"]
+  I --> M["SPL-Memo"]
+  I --> T["SPL-Token"]
+  I --> W["Orca Whirlpool"]
+  M --> ME["InvalidInstructionData<br/>non-UTF-8 memo"]
+  T --> TE["Custom(12)<br/>InvalidInstruction"]
+  W --> WE["Custom(101)<br/>Anchor fallback-not-found"]
+  ME --> BASE["BASELINE collapses all three:<br/>bundle_failure → abort ⚠"]
+  TE --> BASE
+  WE --> BASE
+  ME --> A1["AGENT: non-UTF-8 memo data · 0.98"]
+  TE --> A2["AGENT: malformed token discriminant · 0.97"]
+  WE --> A3["AGENT: wrong / stale Anchor IDL · 0.98"]
+  </pre>
+  <figcaption>Figure 5 — Meaning is program-relative: Token's <span class="mono">Custom(12)</span> and Anchor's <span class="mono">Custom(101)</span> share an error <em>shape</em> but nothing else. The baseline is blind; the agent is not.</figcaption>
+  </figure>
+
+  <h3>Retry, recovery, and degradation</h3>
+  <ul>
+    <li><strong>Remedy execution stays in Core.</strong> The agent <em>names</em> the remedy (refresh blockhash, bump tip, raise CU limit, hold-and-resubmit, abort); Core owns the magnitudes — e.g. the raised CU limit is derived from a max-CU re-simulation (×1.5, capped at 1.4M), not a tuned constant.</li>
+    <li><strong>Attempt-2 is seeded clean.</strong> The injected attempt-1 cap applies only to attempt-1; the retry starts from a fresh state so a remedy is tested honestly.</li>
+    <li><strong>Loud degradation.</strong> If the agent is unreachable within <code>ARGUS_AGENT_TIMEOUT_SECS</code> (~45s), Core falls back to the local baseline policy and records <code>model="local-fallback"</code> — the run never dies on an agent hiccup, and the fallback is visible in the log.</li>
+    <li><strong>Stream resilience as failure handling.</strong> A dead endpoint is bounded by a reconnect ceiling that returns <code>gave_up</code> rather than hanging; a dropped Landed frame is recovered by post-stream RPC reconciliation.</li>
+  </ul>
+</section>
+
+<!-- 6 AGENT -->
+<section id="agent">
+  <h2><span class="num">6</span>AI Agent Responsibilities</h2>
+  <p>The agent owns exactly one operational decision — <strong>failure diagnosis</strong> (the challenge's "Failure Reasoning" option, with autonomous fault-injection recovery as a strict superset). It observes a failed transaction, reasons about <em>why</em> it failed, and decides what must change before retrying. Retry decisions come from the agent, not from hardcoded logic.</p>
+
+  <h3>The contract</h3>
+  <table>
+    <thead><tr><th>Direction</th><th>Payload</th></tr></thead>
+    <tbody>
+      <tr><td>Core → Agent<br/><span class="meta">POST /decide</span></td><td><code>attempt</code>, <code>error_text</code>, <code>instruction_error</code>, <code>failing_program_id</code>, <code>program_logs[]</code>, <code>tip_lamports</code>, <code>tip_floor_p50/p75</code>, <code>blockhash_age_slots</code>, <code>cu_limit</code>, <code>cu_used</code>, <code>current_slot</code>. <strong>No <code>failure_class</code> is sent.</strong></td></tr>
+      <tr><td>Agent → Core<br/><span class="meta">submit_decision tool</span></td><td><code>diagnosis</code> (free text), <code>triage</code> (enum), <code>remedy</code> (enum), <code>rationale</code>, <code>confidence</code> — plus <code>reasoning_trace</code> (<code>message.reasoning</code>) and the serving <code>model</code> slug.</td></tr>
+    </tbody>
+  </table>
+  <p>The agent reasons in three steps: <strong>diagnose</strong> (identify the failing program, decode its program-specific error from the logs), <strong>triage</strong> into one of four recovery buckets, then choose the executable <strong>remedy</strong>. The system prompt explicitly forbids a fixed error→remedy mapping.</p>
+
+  <h3>Triage — the axis the agent reasons on</h3>
+  <div class="grid">
+    <div class="card"><h4>recoverable_by_refresh</h4><div class="meta">e.g. expired blockhash → refresh &amp; resubmit</div></div>
+    <div class="card"><h4>recoverable_by_modification</h4><div class="meta">e.g. compute exceeded → raise CU / bump tip</div></div>
+    <div class="card"><h4>permanent</h4><div class="meta">malformed call → abort (but with the program-specific reason)</div></div>
+    <div class="card"><h4>funding</h4><div class="meta">insufficient lamports → abort / top up</div></div>
+  </div>
+
+  <div class="callout warn">
+    <span class="k">Why this isn't sequential automation</span>
+    Any decision specifiable cleanly enough to grade is encodable as a classifier — <em>legible ⟹ enumerable ⟹ lookup-replicable</em>. Handing the agent a four-class verdict and a five-element remedy set is a 4→5 mapping a <code>match</code> statement replicates: the "simple wrapper" the challenge disqualifies. The escape is not a cleverer decision — it's a different <strong>input</strong>: the unbounded, unstructured raw failure surface. An AMM alone defines its own custom-error enum (<code>Custom(6022)</code> differs per program and per version); a static classifier would need a combinatorial, perpetually-stale per-program table. Reasoning over the raw surface does not.
+  </div>
+  <p>The <strong>honesty boundary</strong>: on a <code>permanent</code> failure the agent and the baseline both abort — the agent's added value there is the <em>reason</em>, not a different action. That candor is the point: the agent is graded on the diagnoses a lookup can't produce, not on theatrical disagreement. <span class="pill">ADR 0012</span></p>
+</section>
+
+<!-- 7 EVIDENCE -->
+<section id="evidence">
+  <h2><span class="num">7</span>Operational Evidence</h2>
+  <p>From the graded mainnet run <code>run-1781958744615</code> (Lifecycle Log committed to the repo as <code>logs/lifecycle-1781958744615.{md,jsonl}</code>):</p>
+  <div class="badges" style="margin:14px 0;">
+    <span class="badge">15 submissions</span>
+    <span class="badge">6 injected failures</span>
+    <span class="badge green">9 landed</span>
+    <span class="badge">0.000135 SOL total</span>
+    <span class="badge amber">faulted bundles cost 0 (tips pay only on landing)</span>
+  </div>
+
+  <h3>The agent vs. the baseline, on real errors</h3>
+  <table>
+    <thead><tr><th>Program</th><th>Raw error</th><th>Agent diagnosis</th><th>Conf.</th><th>Baseline</th></tr></thead>
+    <tbody>
+      <tr><td>System (funding)</td><td><code>Custom(1)</code></td><td>insufficient funds — held 47.8M lamports, needed 1e15</td><td>0.97</td><td>bundle_failure → abort ⚠</td></tr>
+      <tr><td>SPL-Memo</td><td><code>InvalidInstructionData</code></td><td>non-UTF-8 memo data ("invalid UTF-8 from byte 0")</td><td>0.98</td><td>bundle_failure → abort ⚠</td></tr>
+      <tr><td>SPL-Token</td><td><code>Custom(12)</code></td><td>malformed instruction discriminant (InvalidInstruction)</td><td>0.97</td><td>bundle_failure → abort ⚠</td></tr>
+      <tr><td>Orca Whirlpool</td><td><code>Custom(101)</code></td><td>Anchor InstructionFallbackNotFound — wrong/stale IDL</td><td>0.98</td><td>bundle_failure → abort ⚠</td></tr>
+    </tbody>
+  </table>
+  <p>Four payloads the baseline collapses to one identical blind verdict drew four <em>distinct</em> program-specific diagnoses. The two recoverable injections — expired blockhash (aged 200 slots → <code>BlockhashNotFound</code>, conf. 0.99) and compute exceeded (<code>cu_limit=1</code>, conf. 0.99) — were triaged and <strong>landed on attempt 2</strong> (slots 427724252 and 427724375). Every decision was served by <code>anthropic/claude-4.6-sonnet</code> with a non-empty reasoning trace (traceless-scored count: 0).</p>
+
+  <h3>The three required questions, answered from this run</h3>
+  <div class="callout">
+    <span class="k">Q1 — what does the processed→confirmed delta tell you?</span>
+    It is the cluster's <strong>vote-aggregation latency</strong> (≥⅔ of stake voting), i.e. <em>consensus health</em> — not inclusion speed. This run: <strong>87–272 ms, median 123 ms</strong> across the 9 landed submissions — sub-quarter-second, i.e. healthy consensus. For contrast, the next hop confirmed→finalized took <strong>~11.8–13.3 s (median ~12.2 s)</strong> because finalization waits for the slot to be rooted (~31 blocks).
+  </div>
+  <div class="callout">
+    <span class="k">Q2 — why never use a finalized blockhash for a time-sensitive tx?</span>
+    A blockhash is valid only <strong>~150 slots (~60–90 s)</strong>. A blockhash fetched at <code>finalized</code> commitment is already <strong>~31 slots old</strong> the instant you receive it — ~20% of the window burned before you've built, signed, and submitted. Demonstrated directly: payload p0, injected with a blockhash aged 200 slots, was rejected at preflight with <code>BlockhashNotFound</code>; the agent diagnosed exactly that and recovery required a fresh blockhash.
+  </div>
+  <div class="callout">
+    <span class="k">Q3 — what if the Jito leader skips their slot?</span>
+    A Jito bundle is slot-specific and all-or-nothing. If that leader skips, the bundle is simply <strong>not included</strong> — it is <em>not</em> auto-forwarded to the next leader, and because tips pay only on inclusion, <strong>no tip is charged</strong>. The remedy is to resubmit to the next leader window with a fresh blockhash. This run is the receipt: all 6 faulted bundles were sent free (zero tip), and the two recoverable faults were resubmitted and landed.
+  </div>
+</section>
+
+<hr/>
+
+<!-- ADR INDEX -->
+<section id="adrs">
+  <h2>Appendix · ADR Index</h2>
+  <p>The full decisions, with context and consequences, live in the repository under <code>docs/adr/</code>.</p>
+  <table>
+    <thead><tr><th>#</th><th>Decision</th></tr></thead>
+    <tbody>
+      <tr><td>0001</td><td>Two-runtime split: Rust Core + TypeScript Agent over HTTP</td></tr>
+      <tr><td>0002</td><td>Run the real path on mainnet, not devnet</td></tr>
+      <tr><td>0003</td><td>Agent owns Failure Reasoning <em>(superseded by 0012)</em></td></tr>
+      <tr><td>0004</td><td>Confirmation via two Yellowstone subscriptions; bundle-status RPC is cross-check only</td></tr>
+      <tr><td>0005</td><td>Dynamic tips from the Tip Floor; Core sets base, Agent adjusts on failure</td></tr>
+      <tr><td>0006</td><td>Model access via OpenRouter, not a single-vendor SDK</td></tr>
+      <tr><td>0007</td><td>Jito bundles are the scored path; Helius Sender is a backstop</td></tr>
+      <tr><td>0008</td><td>Leader-window timing via a minimal gRPC SearcherService client (NoAuth)</td></tr>
+      <tr><td>0009</td><td>Resilient subscriptions: bounded-channel backpressure + exponential-backoff reconnect</td></tr>
+      <tr><td>0010</td><td>Deterministic failure classification via preflight simulation <em>(amended by 0011, 0012)</em></td></tr>
+      <tr><td>0011</td><td>The Run: single-session orchestrator, Run-ID-prefix keying, sent injected failures</td></tr>
+      <tr><td>0012</td><td>Agent owns Failure Diagnosis over the unbounded program-error tail</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <p>Argus — architecture document for the Superteam Nigeria Advanced Infrastructure Challenge. Source of truth for code-level detail is the repository; this document explains the <em>why</em> and the <em>shape</em>.</p>
+</footer>
+</main>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral',
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true },
+    themeVariables: { fontFamily: '-apple-system, Segoe UI, Roboto, sans-serif' }
+  });
+</script>
+</body>
+</html>
