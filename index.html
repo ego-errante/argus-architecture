@@ -3,159 +3,355 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Argus — Architecture Document</title>
+<title>Argus — Architecture Field Dossier</title>
+<meta name="description" content="Argus — a Solana smart-transaction stack. The Core is the eyes; the Agent is the judgment; the boundary is the architecture." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #ffffff;
-    --fg: #1b1f24;
-    --muted: #5b6470;
-    --line: #e3e7ec;
-    --accent: #3b4fd6;      /* indigo */
-    --accent-soft: #eef0fe;
-    --amber: #b4690e;
-    --amber-soft: #fdf3e3;
-    --green: #1a7f48;
-    --code-bg: #f5f7fa;
-    --sidebar: 280px;
-    --maxw: 880px;
+    --paper:#F7F8FB; --panel:#FFFFFF; --panel-2:#FBFCFE; --inset:#EEF1F7;
+    --ink:#0A1020; --ink-soft:#27314A; --muted:#5C6678; --faint:#8893A6;
+    --line:#D7DDE8; --line-soft:#E6EAF1;
+    --lamp:#A86F12; --lamp-bright:#E6B450; --lamp-wash:#FBF3E2;
+    --signal:#0E8C7E; --signal-wash:#E2F4F0;
+    --alert:#B5532B;
+    --rail:240px; --content:760px;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"IBM Plex Sans",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --ease:cubic-bezier(.22,.61,.36,1);
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    color: var(--fg);
-    background: var(--bg);
-    line-height: 1.6;
-    font-size: 16px;
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
-  code, pre, .mono { font-family: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace; }
-  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.86em; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  a { color:var(--lamp); text-decoration:none; }
+  a:hover { text-decoration:underline; text-underline-offset:3px; }
+  code { font-family:var(--mono); font-size:0.85em; background:var(--inset); padding:0.1em 0.36em; border-radius:4px; color:var(--ink-soft); }
+  :focus-visible { outline:2px solid var(--lamp); outline-offset:3px; border-radius:3px; }
 
-  /* layout */
-  .wrap { display: flex; align-items: flex-start; }
-  nav.toc {
-    position: sticky; top: 0; align-self: flex-start;
-    width: var(--sidebar); height: 100vh; overflow-y: auto;
-    border-right: 1px solid var(--line); padding: 28px 20px; background: #fbfcfe;
-    flex: 0 0 var(--sidebar);
+  /* ---------- page frame ---------- */
+  .page { padding:0 22px; }
+  main { max-width:var(--content); margin-inline:auto; }
+  @media (min-width:1080px){ .page { padding-left:var(--rail); padding-right:22px; } }
+
+  /* ---------- WATCH-RAIL (desktop TOC) ---------- */
+  .rail { display:none; }
+  @media (min-width:1080px){
+    .rail {
+      display:block; position:fixed; left:0; top:0; width:var(--rail); height:100vh;
+      padding:34px 22px; border-right:1px solid var(--line); background:var(--panel-2);
+      overflow-y:auto;
+    }
+    .rail__brand { font-family:var(--serif); font-weight:700; font-size:1.18rem; letter-spacing:-.01em; }
+    .rail__tag { font-family:var(--mono); font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); margin-top:6px; }
+    .rail__list { list-style:none; margin:26px 0 0; padding:0; }
+    .rail__item a {
+      display:flex; align-items:center; gap:11px; padding:7px 0; color:var(--muted);
+      font-size:.82rem; line-height:1.2; transition:color .2s var(--ease);
+    }
+    .rail__item a:hover { color:var(--ink); text-decoration:none; }
+    .rail__eye { flex:0 0 auto; width:11px; height:11px; border-radius:50%; border:1.5px solid var(--faint);
+      background:transparent; transition:all .35s var(--ease); position:relative; }
+    .rail__num { font-family:var(--mono); font-size:.62rem; color:var(--faint); width:1.4em; }
+    .rail__item.is-active a { color:var(--ink); font-weight:500; }
+    .rail__item.is-active .rail__eye { border-color:var(--lamp); background:var(--lamp-bright);
+      box-shadow:0 0 0 3px var(--lamp-wash); }
+    .rail__item.is-active .rail__num { color:var(--lamp); }
   }
-  nav.toc .brand { font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; }
-  nav.toc .brand small { display:block; font-weight: 500; color: var(--muted); font-size: 0.72rem; margin-top: 4px; }
-  nav.toc ol { list-style: none; padding: 0; margin: 18px 0 0; counter-reset: s; }
-  nav.toc li { margin: 2px 0; }
-  nav.toc a { display: block; padding: 5px 10px; border-radius: 6px; color: var(--fg); font-size: 0.88rem; }
-  nav.toc a:hover { background: var(--accent-soft); text-decoration: none; }
-  main { flex: 1 1 auto; min-width: 0; padding: 40px 48px 120px; max-width: calc(var(--maxw) + 96px); }
 
-  header.doc { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 8px; }
-  header.doc h1 { font-size: 2.1rem; margin: 0 0 6px; letter-spacing: -0.02em; }
-  header.doc .sub { color: var(--muted); font-size: 1.05rem; margin: 0 0 18px; }
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; }
-  .badge { font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-  .badge.green { background: #e6f5ec; color: var(--green); }
-  .badge.amber { background: var(--amber-soft); color: var(--amber); }
+  /* ---------- TOPBAR + DRAWER (mobile TOC) ---------- */
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px;
+    position:sticky; top:0; z-index:40; background:rgba(247,248,251,.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line); padding:11px 20px; }
+  .topbar__brand { font-family:var(--serif); font-weight:700; font-size:1.05rem; }
+  .topbar__where { font-family:var(--mono); font-size:.66rem; letter-spacing:.08em; color:var(--muted);
+    text-transform:uppercase; margin-left:10px; }
+  .topbar__toggle { display:inline-flex; align-items:center; gap:8px; font-family:var(--mono);
+    font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer; }
+  .topbar__toggle .dot { width:9px; height:9px; border-radius:50%; border:1.5px solid var(--lamp); background:var(--lamp-bright); }
+  @media (min-width:1080px){ .topbar { display:none; } }
 
-  section { padding-top: 38px; }
-  h2 { font-size: 1.5rem; letter-spacing: -0.01em; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-soft); }
-  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
-  h3 { font-size: 1.12rem; margin: 26px 0 6px; }
-  p { margin: 10px 0; }
-  ul, ol { padding-left: 22px; }
-  li { margin: 4px 0; }
+  .drawer-scrim { position:fixed; inset:0; z-index:45; background:rgba(10,16,32,.32); opacity:0;
+    pointer-events:none; transition:opacity .25s var(--ease); }
+  .drawer-scrim.is-open { opacity:1; pointer-events:auto; }
+  .drawer { position:fixed; z-index:46; top:0; right:0; height:100vh; width:min(86vw,360px);
+    background:var(--panel); border-left:1px solid var(--line); padding:26px 24px;
+    transform:translateX(100%); transition:transform .3s var(--ease); overflow-y:auto; }
+  .drawer.is-open { transform:translateX(0); }
+  .drawer__head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px; }
+  .drawer__title { font-family:var(--mono); font-size:.66rem; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); }
+  .drawer__close { background:none; border:none; font-size:1.4rem; line-height:1; color:var(--muted); cursor:pointer; padding:4px; }
+  .drawer a { display:block; padding:11px 0; border-bottom:1px solid var(--line-soft); color:var(--ink); }
+  .drawer a:hover { color:var(--lamp); text-decoration:none; }
+  .drawer a .e { font-family:var(--mono); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); display:block; }
+  .drawer a .t { font-size:1rem; }
+  body.no-scroll { overflow:hidden; }
 
-  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 0.9rem; }
-  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
-  th { background: #f3f5f9; font-weight: 600; }
-  tr:nth-child(even) td { background: #fafbfc; }
+  /* ---------- shared section scaffolding ---------- */
+  .section { padding-block:clamp(3.4rem,7vw,5.6rem); border-top:1px solid var(--line-soft); scroll-margin-top:70px; }
+  .section:first-of-type { border-top:none; }
+  .eyebrow { font-family:var(--mono); font-size:.7rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--lamp); display:flex; align-items:center; gap:10px; margin:0 0 14px; }
+  .eyebrow::before { content:""; width:18px; height:1px; background:var(--lamp); display:inline-block; }
+  h2.h { font-family:var(--serif); font-weight:600; font-size:clamp(1.55rem,3.2vw,2.1rem);
+    letter-spacing:-.015em; line-height:1.12; margin:0 0 .5rem; }
+  h3 { font-family:var(--sans); font-weight:600; font-size:1.06rem; margin:1.8rem 0 .4rem; letter-spacing:-.005em; }
+  p { margin:.7rem 0; color:var(--ink-soft); }
+  .lede { font-size:1.12rem; color:var(--ink); }
+  strong { color:var(--ink); font-weight:600; }
+  ul { padding-left:1.1rem; } li { margin:.35rem 0; color:var(--ink-soft); }
+  li::marker { color:var(--lamp); }
 
-  .callout { border-radius: 10px; padding: 14px 18px; margin: 18px 0; border: 1px solid var(--line); }
-  .callout .k { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
-  .callout.thesis { background: var(--accent-soft); border-color: #d7dcfb; }
-  .callout.thesis .k { color: var(--accent); }
-  .callout.warn { background: var(--amber-soft); border-color: #f0dcc0; }
-  .callout.warn .k { color: var(--amber); }
+  /* ---------- hero ---------- */
+  .hero { position:relative; padding-block:clamp(3.6rem,9vw,6.4rem) clamp(2.2rem,5vw,3.4rem); overflow:hidden; }
+  .aperture-field { position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .ap { position:absolute; border-radius:50%; border:1px solid rgba(10,16,32,.16); transform:translate(-50%,-50%);
+    opacity:0; transition:opacity .9s var(--ease); }
+  .ap--open { border-color:var(--lamp); background:var(--lamp-bright); box-shadow:0 0 0 4px var(--lamp-wash); }
+  body.lit .ap { opacity:1; }
+  .hero__inner { position:relative; z-index:1; }
+  .hero__eyebrow { font-family:var(--mono); font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:1.4rem; }
+  .wordmark { font-family:var(--serif); font-weight:700; font-size:clamp(3rem,11vw,5.4rem); line-height:.9;
+    letter-spacing:-.03em; margin:0; }
+  .wordmark .glyph { color:var(--lamp); }
+  .thesis { font-family:var(--serif); font-weight:500; font-size:clamp(1.35rem,3.4vw,2rem); line-height:1.28;
+    letter-spacing:-.01em; margin:1.5rem 0 0; max-width:20ch; }
+  .thesis em { font-style:italic; color:var(--lamp); }
+  .hero__sub { max-width:54ch; margin-top:1.1rem; color:var(--muted); font-size:1.05rem; }
 
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
-  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: #fcfdff; }
-  .card h4 { margin: 0 0 4px; font-size: 0.98rem; }
-  .card .meta { color: var(--muted); font-size: 0.8rem; }
+  .readout { margin-top:2rem; border:1px solid var(--line); border-radius:12px; background:var(--panel);
+    display:grid; grid-template-columns:repeat(3,1fr); overflow:hidden; }
+  .readout__cell { padding:14px 16px; border-right:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft); }
+  .readout__cell:nth-child(3n) { border-right:none; }
+  .readout__v { font-family:var(--mono); font-size:1.18rem; font-weight:600; color:var(--ink); letter-spacing:-.01em; }
+  .readout__v .u { font-size:.7rem; color:var(--muted); font-weight:400; }
+  .readout__k { font-family:var(--mono); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-top:3px; }
+  .readout__v.live { color:var(--signal); }
+  @media (max-width:560px){ .readout { grid-template-columns:repeat(2,1fr); } .readout__cell:nth-child(3n){border-right:1px solid var(--line-soft);} .readout__cell:nth-child(2n){border-right:none;} }
 
-  figure { margin: 22px 0; }
-  figure.diagram { border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: #fcfdff; text-align: center; overflow-x: auto; }
-  figcaption { color: var(--muted); font-size: 0.82rem; margin-top: 10px; text-align: center; }
-  pre.mermaid { background: transparent; }
+  /* ---------- field guide (numbered path) ---------- */
+  .guide { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:1.2rem; }
+  @media (max-width:720px){ .guide { grid-template-columns:1fr; } }
+  .step { border:1px solid var(--line); border-radius:12px; padding:18px; background:var(--panel); }
+  .step__n { font-family:var(--mono); font-size:.72rem; color:var(--lamp); letter-spacing:.1em; }
+  .step__t { font-family:var(--serif); font-weight:600; font-size:1.1rem; margin:.3rem 0 .35rem; }
+  .step__d { font-size:.92rem; color:var(--muted); margin:0; }
+  .step a { font-weight:500; }
 
-  .kv { font-size: 0.86rem; }
-  .pill { display:inline-block; font-size:0.72rem; padding:1px 7px; border-radius:5px; background:var(--code-bg); color:var(--muted); margin-left:6px; }
-  hr { border: none; border-top: 1px solid var(--line); margin: 36px 0; }
-  footer { color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--line); padding-top: 20px; }
+  /* ---------- tables ---------- */
+  .tbl-wrap { overflow-x:auto; margin:1.2rem 0; border:1px solid var(--line); border-radius:12px; }
+  table { border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px; }
+  th,td { text-align:left; padding:10px 13px; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  thead th { font-family:var(--mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); background:var(--inset); border-bottom:1px solid var(--line); }
+  tbody tr:last-child td { border-bottom:none; }
+  td code { white-space:nowrap; }
 
-  @media (max-width: 880px) {
-    nav.toc { display: none; }
-    main { padding: 28px 20px 80px; }
-    .grid { grid-template-columns: 1fr; }
+  /* ---------- cards ---------- */
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:1.2rem 0; }
+  @media (max-width:640px){ .cards { grid-template-columns:1fr; } }
+  .card { border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:var(--panel); }
+  .card h4 { margin:0 0 2px; font-family:var(--mono); font-size:.8rem; color:var(--ink); }
+  .card .meta { font-family:var(--mono); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+  .card .kv { font-size:.84rem; color:var(--muted); line-height:1.7; }
+
+  .cards4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:1.1rem 0; }
+  @media (max-width:760px){ .cards4 { grid-template-columns:repeat(2,1fr); } }
+  .triage { border:1px solid var(--line); border-radius:10px; padding:13px; background:var(--panel); }
+  .triage b { font-family:var(--mono); font-size:.74rem; color:var(--ink); display:block; }
+  .triage span { font-size:.8rem; color:var(--muted); }
+
+  /* ---------- callouts ---------- */
+  .callout { border:1px solid var(--line); border-left:3px solid var(--lamp); border-radius:10px;
+    padding:15px 18px; margin:1.3rem 0; background:var(--panel); }
+  .callout.warn { border-left-color:var(--alert); background:#fdf6f2; }
+  .callout .k { font-family:var(--mono); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--lamp); display:block; margin-bottom:6px; }
+  .callout.warn .k { color:var(--alert); }
+  .callout p { margin:0; color:var(--ink-soft); }
+
+  /* ---------- mermaid figures ---------- */
+  figure { margin:1.4rem 0; }
+  .diagram { border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:20px; overflow-x:auto; }
+  .diagram pre.mermaid { margin:0; text-align:center; background:transparent; min-height:40px; }
+  figcaption { font-family:var(--mono); font-size:.72rem; color:var(--muted); margin-top:10px; line-height:1.5; }
+  figcaption b { color:var(--ink); font-weight:500; }
+
+  /* ---------- LIFECYCLE SPINE (signature) ---------- */
+  .spine { position:relative; margin:1.6rem 0; padding-left:30px; }
+  .spine::before { content:""; position:absolute; left:7px; top:8px; bottom:8px; width:2px;
+    background:linear-gradient(var(--line),var(--line)); }
+  .spine__scan { content:""; position:absolute; left:5px; top:0; width:6px; height:6px; border-radius:50%;
+    background:var(--lamp-bright); box-shadow:0 0 0 4px var(--lamp-wash); opacity:0; }
+  body.lit .spine__scan { animation:scan 2.2s var(--ease) .3s 1; }
+  @keyframes scan { 0%{top:6px;opacity:1} 90%{opacity:1} 100%{top:calc(100% - 12px);opacity:0} }
+  .node { position:relative; padding:2px 0 4px; }
+  .node__dot { position:absolute; left:-30px; top:4px; width:16px; height:16px; border-radius:50%;
+    background:var(--panel); border:2px solid var(--ink-soft); }
+  .node--land .node__dot { border-color:var(--signal); background:var(--signal-wash); }
+  .node--final .node__dot { border-color:var(--lamp); background:var(--lamp-bright); }
+  .node--ghost .node__dot { border-color:var(--faint); border-style:dashed; }
+  .node__name { font-family:var(--mono); font-size:.82rem; font-weight:600; letter-spacing:.04em; color:var(--ink); }
+  .node--ghost .node__name { color:var(--faint); }
+  .node__note { font-size:.82rem; color:var(--muted); margin:1px 0 0; }
+  .delta { margin:8px 0 8px; padding:9px 13px; border:1px dashed var(--line); border-radius:9px;
+    display:inline-flex; align-items:baseline; gap:10px; background:var(--panel-2); }
+  .delta__v { font-family:var(--mono); font-weight:600; font-size:1.02rem; color:var(--ink); }
+  .delta__v.hi { color:var(--lamp); }
+  .delta__l { font-size:.78rem; color:var(--muted); }
+  .spine__foot { font-family:var(--mono); font-size:.74rem; color:var(--muted); margin-top:.9rem; }
+  .spine__foot b { color:var(--ink); font-weight:500; }
+
+  /* ---------- BLIND vs SEEN (signature) ---------- */
+  .vs { display:grid; grid-template-columns:.85fr 1.15fr; gap:16px; margin:1.4rem 0; align-items:stretch; }
+  @media (max-width:760px){ .vs { grid-template-columns:1fr; } }
+  .vs__col { border:1px solid var(--line); border-radius:14px; padding:18px; background:var(--panel); }
+  .vs__h { font-family:var(--mono); font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; margin-bottom:14px; }
+  .vs__col.blind .vs__h { color:var(--alert); }
+  .vs__col.seen .vs__h { color:var(--signal); }
+  .blindstack { position:relative; min-height:118px; display:flex; align-items:center; justify-content:center; }
+  .ghost { position:absolute; font-family:var(--mono); font-size:.8rem; color:var(--muted);
+    filter:blur(2.5px); opacity:.5; white-space:nowrap; }
+  .ghost.g1 { transform:translate(-46px,-30px) rotate(-4deg); }
+  .ghost.g2 { transform:translate(38px,-6px) rotate(3deg); }
+  .ghost.g3 { transform:translate(-18px,30px) rotate(-2deg); }
+  .verdict { position:relative; z-index:2; font-family:var(--mono); font-size:.86rem; font-weight:600;
+    color:var(--ink); background:var(--inset); border:1px solid var(--line); border-radius:8px; padding:10px 14px; }
+  .verdict .warnmark { color:var(--alert); }
+  .vs__cap { font-size:.82rem; color:var(--muted); margin-top:12px; }
+  .dx { border:1px solid var(--line); border-left:3px solid var(--lamp); border-radius:9px; padding:11px 13px; margin-bottom:9px; background:var(--panel-2); }
+  .dx:last-child { margin-bottom:0; }
+  .dx__top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .dx__prog { font-family:var(--mono); font-size:.8rem; font-weight:600; color:var(--ink); }
+  .dx__conf { font-family:var(--mono); font-size:.74rem; color:var(--signal); }
+  .dx__err { font-family:var(--mono); font-size:.72rem; color:var(--alert); margin:3px 0; }
+  .dx__say { font-size:.84rem; color:var(--ink-soft); margin:0; }
+
+  /* ---------- evidence Q ---------- */
+  .qa { border:1px solid var(--line); border-radius:11px; padding:15px 18px; margin:.9rem 0; background:var(--panel); }
+  .qa .q { font-family:var(--serif); font-weight:600; font-size:1.04rem; margin:0 0 .3rem; }
+  .qa p { margin:0; color:var(--ink-soft); font-size:.96rem; }
+
+  footer { border-top:1px solid var(--line); padding:34px 0 70px; color:var(--muted); font-size:.86rem; }
+  footer a { font-weight:500; }
+
+  .pill { font-family:var(--mono); font-size:.6rem; letter-spacing:.06em; padding:2px 7px; border-radius:5px;
+    background:var(--lamp-wash); color:var(--lamp); margin-left:6px; white-space:nowrap; }
+
+  /* ---------- load reveal ---------- */
+  .reveal { opacity:0; transform:translateY(10px); transition:opacity .7s var(--ease),transform .7s var(--ease); }
+  body.lit .reveal { opacity:1; transform:none; }
+  body.lit .reveal.d1 { transition-delay:.05s; }
+  body.lit .reveal.d2 { transition-delay:.14s; }
+  body.lit .reveal.d3 { transition-delay:.24s; }
+  body.lit .reveal.d4 { transition-delay:.34s; }
+
+  @media (prefers-reduced-motion: reduce){
+    html { scroll-behavior:auto; }
+    .reveal,.ap { transition:none !important; opacity:1 !important; transform:none !important; }
+    .spine__scan { animation:none !important; display:none; }
+    .drawer,.drawer-scrim { transition:none !important; }
+  }
+  @media print {
+    .rail,.topbar,.drawer,.drawer-scrim,.aperture-field { display:none !important; }
+    .page { padding:0 !important; } body { font-size:11pt; }
+    .section { break-inside:avoid; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-<nav class="toc">
-  <div class="brand">Argus<small>Smart Transaction Stack · Architecture</small></div>
-  <ol>
-    <li><a href="#thesis">0 · Thesis</a></li>
-    <li><a href="#architecture">1 · System Architecture</a></li>
-    <li><a href="#components">2 · Key Components</a></li>
-    <li><a href="#dataflow">3 · Data Flow</a></li>
-    <li><a href="#infra">4 · Infrastructure Decisions</a></li>
-    <li><a href="#failure">5 · Failure Handling</a></li>
-    <li><a href="#agent">6 · AI Agent</a></li>
-    <li><a href="#evidence">7 · Operational Evidence</a></li>
-    <li><a href="#adrs">Appendix · ADR Index</a></li>
-  </ol>
+
+<!-- ===== mobile TOC: topbar + drawer ===== -->
+<div class="topbar">
+  <div><span class="topbar__brand">Argus</span><span class="topbar__where" id="whereLabel">Dossier</span></div>
+  <button class="topbar__toggle" id="tocToggle" aria-expanded="false" aria-controls="drawer">
+    <span class="dot" aria-hidden="true"></span> Contents
+  </button>
+</div>
+<div class="drawer-scrim" id="scrim"></div>
+<nav class="drawer" id="drawer" aria-label="Sections" aria-hidden="true">
+  <div class="drawer__head">
+    <span class="drawer__title">Field dossier</span>
+    <button class="drawer__close" id="drawerClose" aria-label="Close contents">&times;</button>
+  </div>
+  <!-- links injected to mirror the rail -->
 </nav>
 
+<!-- ===== desktop TOC: watch-rail ===== -->
+<aside class="rail" aria-label="Sections">
+  <div class="rail__brand">Argus</div>
+  <div class="rail__tag">Architecture · Field Dossier</div>
+  <ul class="rail__list" id="railList"></ul>
+</aside>
+
+<div class="page">
 <main>
-<header class="doc">
-  <h1>Argus — Architecture</h1>
-  <p class="sub">A Solana smart-transaction stack. <strong>Core (Rust) = the eyes</strong>; <strong>Agent (TypeScript) = the judgment</strong>; the HTTP boundary <em>is</em> the architecture.</p>
-  <div class="badges">
-    <span class="badge green">Live on mainnet</span>
-    <span class="badge">Graded run: 15 sent / 6 failed / 9 landed</span>
-    <span class="badge">0.000135 SOL total</span>
-    <span class="badge">Yellowstone gRPC · Jito bundles · OpenRouter</span>
-    <span class="badge amber">Agent owns failure diagnosis</span>
-  </div>
-</header>
 
-<!-- 0 THESIS -->
-<section id="thesis">
-  <h2><span class="num">0</span>Thesis</h2>
-  <p>Argus — named for <em>Argus Panoptes</em>, the hundred-eyed watchman — observes the Solana network in real time, submits Jito bundles intelligently, tracks each submission across commitment levels, and delegates exactly <strong>one</strong> operational decision to an AI agent: <strong>failure diagnosis</strong>.</p>
-  <div class="callout thesis">
-    <span class="k">The one-sentence architecture</span>
-    Two services over HTTP/JSON. A Rust <strong>Core</strong> holds every deterministic, network-facing concern (streaming, leader window, bundles, tips, lifecycle, baseline classification, remedy execution). A TypeScript <strong>Agent</strong> holds a single Claude-powered judgment call. The process boundary is the literal embodiment of the challenge's required <em>"clean separation between AI layer and core transaction stack."</em>
-  </div>
-  <p>The agent's mandate is deliberately narrow and deliberately <em>un-scriptable</em>: it reads the <strong>raw failure surface</strong> of a rejected transaction — the failing program, its structured <code>instruction_error</code>, and its program logs — and returns an open-ended <strong>Diagnosis</strong>, a <strong>Triage</strong>, and the executable <strong>Remedy</strong>. It is <em>not</em> a lookup over a fixed failure-class table; that table exists only as a <strong>baseline contrast</strong> the agent's reasoning is measured against (see <a href="#agent">§6</a> and <a href="#adrs">ADR&nbsp;0012</a>).</p>
-</section>
+  <!-- ===== HERO ===== -->
+  <header class="hero section" id="top" data-nav="Dossier" data-eyebrow="Dossier">
+    <div class="aperture-field" id="apertures" aria-hidden="true"></div>
+    <div class="hero__inner">
+      <div class="hero__eyebrow reveal d1">Solana transaction infrastructure · Mainnet · Field dossier</div>
+      <h1 class="wordmark reveal d1">Argus<span class="glyph">.</span></h1>
+      <p class="thesis reveal d2">The Core is the <em>eyes</em>. The Agent is the <em>judgment</em>. The boundary between them is the architecture.</p>
+      <p class="hero__sub reveal d3">A smart-transaction stack that watches Solana in real time, lands Jito bundles intelligently, tracks every submission across commitment levels, and delegates one decision — failure diagnosis — to an AI agent that reasons over the raw failure surface instead of running a script.</p>
+      <div class="readout reveal d4" role="group" aria-label="Graded mainnet run">
+        <div class="readout__cell"><div class="readout__v">15</div><div class="readout__k">bundles sent</div></div>
+        <div class="readout__cell"><div class="readout__v live">9</div><div class="readout__k">landed</div></div>
+        <div class="readout__cell"><div class="readout__v">6</div><div class="readout__k">faulted</div></div>
+        <div class="readout__cell"><div class="readout__v">0.000135<span class="u"> SOL</span></div><div class="readout__k">total cost</div></div>
+        <div class="readout__cell"><div class="readout__v">123<span class="u"> ms</span></div><div class="readout__k">median P→C</div></div>
+        <div class="readout__cell"><div class="readout__v">mainnet</div><div class="readout__k">network</div></div>
+      </div>
+    </div>
+  </header>
 
-<!-- 1 ARCHITECTURE -->
-<section id="architecture">
-  <h2><span class="num">1</span>System Architecture</h2>
-  <p>Argus is a monorepo of two runtimes deployed via <code>docker-compose</code>, talking only over HTTP/JSON. Rust earns its place on the Yellowstone gRPC firehose — tokio gives idiomatic bounded-channel backpressure and reconnection (the one genuinely hard infrastructure feature the challenge names). TypeScript hosts the agent for LLM-ecosystem ergonomics and fast prompt iteration. Neither leaks into the other: the agent holds zero transaction logic, the Core holds zero model logic. <span class="pill">ADR 0001</span></p>
+  <!-- ===== FIELD GUIDE ===== -->
+  <section class="section" id="guide" data-nav="Field guide" data-eyebrow="Field guide">
+    <div class="eyebrow">Evaluate in five minutes</div>
+    <h2 class="h">A judge's fast path</h2>
+    <p class="lede">Three reads, in order — the thesis, the proof, the reproduction.</p>
+    <div class="guide">
+      <div class="step">
+        <div class="step__n">01 · The thesis</div>
+        <div class="step__t">Why it isn't a lookup</div>
+        <p class="step__d">The agent reasons over the raw failure surface, not a fixed error→remedy table. See <a href="#judgment">§06 Judgment</a> and ADR&nbsp;0012.</p>
+      </div>
+      <div class="step">
+        <div class="step__n">02 · The proof</div>
+        <div class="step__t">A real mainnet run</div>
+        <p class="step__d">15 sent / 9 landed / 6 faulted for 0.000135 SOL, every slot explorer-verifiable. See <a href="#log">§07 The log</a>.</p>
+      </div>
+      <div class="step">
+        <div class="step__n">03 · Reproduce</div>
+        <div class="step__t">Run it yourself</div>
+        <p class="step__d">Code, setup, and the committed Lifecycle Log live in the <a href="https://github.com/ego-errante/argus">argus repository</a>.</p>
+      </div>
+    </div>
+  </section>
 
-  <figure class="diagram">
-  <pre class="mermaid">
+  <!-- ===== 01 TOPOLOGY ===== -->
+  <section class="section" id="topology" data-nav="Topology" data-num="01" data-eyebrow="01 · Topology">
+    <div class="eyebrow">01 · Topology</div>
+    <h2 class="h">System architecture</h2>
+    <p class="lede">Two runtimes, one contract. A Rust <strong>Core</strong> holds every deterministic, network-facing concern. A TypeScript <strong>Agent</strong> holds a single judgment call. They speak only over HTTP/JSON — and that process boundary is the challenge's required clean separation between AI layer and core stack, made literal.</p>
+    <p>Rust earns its place on the Yellowstone gRPC firehose: tokio gives idiomatic bounded-channel backpressure and reconnection — the one genuinely hard feature the brief names. TypeScript hosts the agent for LLM ergonomics and fast prompt iteration. Neither leaks into the other. <span class="pill">ADR 0001</span></p>
+    <figure>
+      <div class="diagram"><pre class="mermaid">
 flowchart LR
   subgraph EXT["External infrastructure"]
     direction TB
     YS["SolInfra Yellowstone gRPC<br/>slot + tx streams"]
-    RPC["SolInfra RPC<br/>blockhash · simulate · balance"]
-    SE["Jito SearcherService gRPC<br/>getNextScheduledLeader"]
-    TF["Jito Tip Floor REST"]
-    BE["Jito Block Engine<br/>sendBundle · 8 regions"]
+    RPC["SolInfra RPC<br/>blockhash · simulate"]
+    SE["Jito searcher gRPC<br/>next leader"]
+    TF["Jito tip floor"]
+    BE["Jito block engine<br/>sendBundle · 8 regions"]
     OR["OpenRouter<br/>model access"]
     SOL["Solana mainnet"]
   end
@@ -165,327 +361,285 @@ flowchart LR
     LDR["leader"]
     TIP["tip"]
     BDL["bundle"]
-    LFC["lifecycle tracker"]
+    LFC["lifecycle"]
     FAIL["failure / classify"]
     ACL["agent_client"]
-    DB[("SQLite<br/>source of truth")]
+    DB[("SQLite")]
   end
-  subgraph AG["Agent — TypeScript · the judgment"]
+  subgraph AG["Agent — TS · the judgment"]
     direction TB
-    HTTP["/health · /decide/"]
+    HTTP["/decide · /health/"]
     DEC["decide()"]
   end
   YS --> STR --> LFC --> DB
   RPC --> FAIL
   SE --> LDR
   TF --> TIP
+  TIP --> BDL
+  LDR -.timing.-> BDL
   BDL --> BE --> SOL
   FAIL --> ACL
-  ACL -->|"HTTP/JSON · raw failure surface"| HTTP --> DEC --> OR
+  ACL -->|"raw failure surface"| HTTP --> DEC --> OR
   ACL --> DB
-  LDR -.timing.-> BDL
-  TIP --> BDL
-  </pre>
-  <figcaption>Figure 1 — System context. The Core touches every network surface; the Agent touches only the model, reached over one HTTP contract.</figcaption>
-  </figure>
+      </pre></div>
+      <figcaption><b>Figure 1.</b> The Core touches every network surface; the Agent touches only the model, reached over one HTTP contract.</figcaption>
+    </figure>
+    <h3>Deployment</h3>
+    <ul>
+      <li><strong>Layout:</strong> <code>core/</code> (Rust), <code>agent/</code> (TypeScript), <code>docs/</code> (ADRs + plan), <code>logs/</code> (SQLite + JSONL + Markdown Lifecycle Log).</li>
+      <li><strong>Mainnet for the real path</strong> with SolInfra credits and a dedicated low-balance keypair — Jito only lands bundles on mainnet, and judges verify slots on explorers. Devnet is a sandbox only. <span class="pill">ADR 0002</span></li>
+      <li><strong>One contract:</strong> a scored run hard-gates on the agent's <code>/health</code> and refuses to start if it is down.</li>
+    </ul>
+  </section>
 
-  <h3>Deployment view</h3>
-  <ul>
-    <li><strong>Repo layout:</strong> <code>core/</code> (Rust), <code>agent/</code> (TypeScript), <code>docs/</code> (ADRs + plan), <code>logs/</code> (SQLite + JSONL + Markdown Lifecycle Log).</li>
-    <li><strong>Real path runs on mainnet</strong> with SolInfra-sponsored credits and a dedicated low-balance keypair — Jito's Block Engine only lands bundles on mainnet, and judges verify slot numbers on explorers. Devnet is a destructive sandbox only. <span class="pill">ADR 0002</span></li>
-    <li><strong>One contract:</strong> <code>Core → Agent</code> is a single <code>POST /decide</code>; a scored run hard-gates on the agent's <code>/health</code> and refuses to start if it is down.</li>
-  </ul>
-</section>
-
-<!-- 2 COMPONENTS -->
-<section id="components">
-  <h2><span class="num">2</span>Key Components</h2>
-
-  <h3>Core (Rust) — deterministic, network-facing</h3>
-  <table>
-    <thead><tr><th>Module</th><th>Responsibility</th><th>Key surface</th></tr></thead>
-    <tbody>
-      <tr><td><code>streaming</code></td><td>Yellowstone slot + transaction subscriptions; resilient driver with reconnect + backpressure.</td><td><code>subscribe_slots</code>, <code>track_lifecycle</code>, <code>resilient_subscribe</code>, <code>StreamMetrics</code></td></tr>
-      <tr><td><code>leader</code></td><td>Detect the next Jito leader window over gRPC (soft timing signal, never a gate).</td><td><code>next_scheduled_leader</code>, <code>NextLeader</code></td></tr>
-      <tr><td><code>tip</code></td><td>Derive the base Tip from the live Jito Tip Floor percentile; clamp to sane bounds.</td><td><code>fetch_tip_lamports</code>, percentiles <code>[25,50,75,95,99]</code></td></tr>
-      <tr><td><code>bundle</code></td><td>Build the all-or-nothing Jito bundle (payload + tip transfer); 8-region concurrent submit.</td><td><code>build_bundle</code>, <code>submit_all_regions</code>, <code>inflight_status</code></td></tr>
-      <tr><td><code>rpc</code></td><td>Minimal JSON-RPC: blockhash, <code>simulateTransaction</code>, balance, aged blockhash for injection.</td><td><code>get_latest_blockhash</code>, <code>simulate_transaction</code>, <code>SimResult</code></td></tr>
-      <tr><td><code>failure</code></td><td>Fault injection, baseline classification, remedy execution, and the <code>Policy</code> seam (Local ↔ Agent).</td><td><code>classify_failure</code>, <code>apply_remedy</code>, <code>Policy</code></td></tr>
-      <tr><td><code>agent_client</code></td><td>The one HTTP boundary: send the raw failure surface, receive the Decision.</td><td><code>AgentClient</code>, <code>FailureContext</code>, <code>Decision</code></td></tr>
-      <tr><td><code>storage</code></td><td>SQLite source of truth; first-observation-wins stage stamps; idempotent column guards.</td><td><code>Store</code>, <code>record_submission</code>, <code>mark_stage</code>, <code>record_decision</code></td></tr>
-      <tr><td><code>export</code></td><td>Render the Lifecycle Log (JSONL + two-part Markdown) purely from SQLite.</td><td><code>write_lifecycle_log</code>, <code>run_counts</code></td></tr>
-      <tr><td><code>main</code></td><td>Entry + env-flag dispatch + orchestrators (the Run, single-lifecycle, injection).</td><td><code>run_orchestrator</code>, <code>submit_and_track_one</code>, <code>injection_run</code></td></tr>
-    </tbody>
-  </table>
-
-  <h3>Agent (TypeScript) — the single judgment</h3>
-  <ul>
-    <li><code>index.ts</code> — Express service: <code>GET /health</code> and <code>POST /decide</code> (zod-validated in, JSON out), default port <code>8787</code>.</li>
-    <li><code>decide.ts</code> — the OpenRouter call: builds the prompt, requests reasoning, parses the <code>submit_decision</code> tool call.</li>
-    <li><code>types.ts</code> — zod schemas shared in spirit with the Rust types (snake_case): <code>FailureContext</code>, <code>Remedy</code>, <code>Triage</code>.</li>
-  </ul>
-
-  <h3>Storage — the Lifecycle Log is the deliverable</h3>
-  <p>SQLite is the single source of truth; JSONL and Markdown are exports rendered from it. Two tables:</p>
-  <div class="grid">
-    <div class="card">
-      <h4><code>submissions</code></h4>
-      <div class="meta">one row per attempt</div>
-      <p class="kv"><code>run_id</code>, <code>attempt</code>, <code>nonce</code>, <code>bundle_id</code>, <code>signature</code>, <code>tip_lamports</code>, <code>submitted_at</code>, <code>landed_slot</code>, <code>processed_at</code>, <code>confirmed_at</code>, <code>finalized_at</code>, <code>failure_class</code> · <code>UNIQUE(run_id, attempt, nonce)</code></p>
+  <!-- ===== 02 INSTRUMENTS ===== -->
+  <section class="section" id="instruments" data-nav="Instruments" data-num="02" data-eyebrow="02 · Instruments">
+    <div class="eyebrow">02 · Instruments</div>
+    <h2 class="h">Key components</h2>
+    <h3>Core (Rust) — deterministic, network-facing</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Module</th><th>Responsibility</th><th>Key surface</th></tr></thead>
+      <tbody>
+        <tr><td><code>streaming</code></td><td>Yellowstone slot + tx subscriptions; resilient driver with reconnect + backpressure.</td><td><code>track_lifecycle</code>, <code>resilient_subscribe</code></td></tr>
+        <tr><td><code>leader</code></td><td>Next Jito leader window over gRPC — a soft timing signal, never a gate.</td><td><code>next_scheduled_leader</code></td></tr>
+        <tr><td><code>tip</code></td><td>Base tip from the live Jito tip floor percentile; clamped to sane bounds.</td><td><code>fetch_tip_lamports</code></td></tr>
+        <tr><td><code>bundle</code></td><td>All-or-nothing Jito bundle (payload + tip); 8-region concurrent submit.</td><td><code>build_bundle</code>, <code>submit_all_regions</code></td></tr>
+        <tr><td><code>rpc</code></td><td>Blockhash, <code>simulateTransaction</code>, balance, aged blockhash for injection.</td><td><code>simulate_transaction</code>, <code>SimResult</code></td></tr>
+        <tr><td><code>failure</code></td><td>Fault injection, baseline classification, remedy execution, the <code>Policy</code> seam.</td><td><code>classify_failure</code>, <code>apply_remedy</code></td></tr>
+        <tr><td><code>agent_client</code></td><td>The one HTTP boundary: send the raw surface, receive the Decision.</td><td><code>AgentClient</code>, <code>Decision</code></td></tr>
+        <tr><td><code>storage</code></td><td>SQLite source of truth; first-observation-wins stage stamps.</td><td><code>Store</code>, <code>record_decision</code></td></tr>
+        <tr><td><code>export</code></td><td>Render the Lifecycle Log (JSONL + Markdown) purely from SQLite.</td><td><code>write_lifecycle_log</code></td></tr>
+      </tbody>
+    </table></div>
+    <h3>Agent (TypeScript) — the single judgment</h3>
+    <ul>
+      <li><code>index.ts</code> — Express service: <code>GET /health</code>, <code>POST /decide</code> (zod-validated), port 8787.</li>
+      <li><code>decide.ts</code> — the OpenRouter call: prompt, reasoning request, <code>submit_decision</code> tool parse.</li>
+      <li><code>types.ts</code> — zod schemas mirroring the Rust types (snake_case).</li>
+    </ul>
+    <h3>Storage — the Lifecycle Log is the deliverable</h3>
+    <div class="cards">
+      <div class="card">
+        <h4>submissions</h4><div class="meta">one row per attempt</div>
+        <div class="kv"><code>run_id</code> · <code>attempt</code> · <code>nonce</code> · <code>signature</code> · <code>tip_lamports</code> · <code>landed_slot</code> · <code>processed_at</code> · <code>confirmed_at</code> · <code>finalized_at</code> · <code>failure_class</code></div>
+      </div>
+      <div class="card">
+        <h4>decisions</h4><div class="meta">one row per agent decision</div>
+        <div class="kv"><code>remedy</code> · <code>baseline_remedy</code> · <code>diagnosis</code> · <code>triage</code> · <code>rationale</code> · <code>confidence</code> · <code>reasoning_trace</code> · <code>model</code></div>
+      </div>
     </div>
-    <div class="card">
-      <h4><code>decisions</code></h4>
-      <div class="meta">one row per agent decision</div>
-      <p class="kv"><code>run_id</code>, <code>attempt</code>, <code>failure_class</code> (baseline), <code>remedy</code>, <code>baseline_remedy</code>, <code>diagnosis</code>, <code>triage</code>, <code>rationale</code>, <code>confidence</code>, <code>reasoning_trace</code>, <code>model</code>, <code>decided_at</code></p>
-    </div>
-  </div>
-  <p>A <strong>Run</strong> is identified by a <em>prefix</em>, not a column: the session is <code>run-{ts}</code> and payload <em>k</em> runs under child <code>run_id = run-{ts}-p{k}</code>, so <code>(run_id, attempt)</code> stays unique per payload with zero schema change. Run-scoped queries use <code>WHERE run_id LIKE 'run-{ts}-%'</code>. <span class="pill">ADR 0011</span></p>
-</section>
+    <p>A <strong>Run</strong> is a prefix, not a column: the session is <code>run-{ts}</code> and payload <em>k</em> runs under child <code>run_id = run-{ts}-p{k}</code> — unique keys, zero schema change. <span class="pill">ADR 0011</span></p>
+  </section>
 
-<!-- 3 DATA FLOW -->
-<section id="dataflow">
-  <h2><span class="num">3</span>Data Flow Between Services</h2>
-
-  <h3>Happy path — submit → track → persist</h3>
-  <p>The subscription opens <strong>before</strong> the bundle is submitted, so Inclusion is never missed. Tracking is bounded by a 60s timeout and reconciled afterward against <code>getSignatureStatuses</code> in case a Landed frame was dropped.</p>
-  <figure class="diagram">
-  <pre class="mermaid">
+  <!-- ===== 03 OBSERVATION ===== -->
+  <section class="section" id="observation" data-nav="Observation" data-num="03" data-eyebrow="03 · Observation">
+    <div class="eyebrow">03 · Observation</div>
+    <h2 class="h">Data flow between services</h2>
+    <h3>Happy path — submit, track, persist</h3>
+    <p>The subscription opens <strong>before</strong> the bundle is sent, so inclusion is never missed; tracking is reconciled afterward against <code>getSignatureStatuses</code> in case a Landed frame is dropped.</p>
+    <figure>
+      <div class="diagram"><pre class="mermaid">
 sequenceDiagram
   autonumber
   participant O as Orchestrator
-  participant L as leader / tip
   participant B as bundle
-  participant J as Jito Block Engine
+  participant J as Jito
   participant Y as Yellowstone
   participant DB as SQLite
-  O->>L: next_scheduled_leader() · fetch_tip_lamports(p75)
   O->>B: build_bundle(payload, tip)
   O->>DB: record_submission
-  O->>Y: subscribe slot + tx(signature) — BEFORE submit
+  O->>Y: subscribe slot + tx — before submit
   Y-->>O: on_subscribed
-  O->>J: submit_all_regions(bundle)
+  O->>J: submit_all_regions
   Y-->>O: Landed (slot)
   O->>DB: set_landed_slot
   Y-->>O: Processed → Confirmed → Finalized
-  O->>DB: mark_stage (first-observation-wins)
-  Note over O,DB: log P→C, C→F deltas · reconcile via getSignatureStatuses
-  </pre>
-  <figcaption>Figure 2 — Inclusion comes from the transaction stream; commitment progression comes from the slot stream. <span class="mono">ADR 0004</span></figcaption>
-  </figure>
+  O->>DB: mark_stage
+      </pre></div>
+      <figcaption><b>Figure 2.</b> Inclusion comes from the transaction stream; commitment progression from the slot stream. <span>ADR 0004</span></figcaption>
+    </figure>
 
-  <h3>Lifecycle states</h3>
-  <figure class="diagram">
-  <pre class="mermaid">
-stateDiagram-v2
-  [*] --> Submitted
-  Submitted --> Landed: tx-subscription (Inclusion)
-  Submitted --> NonLanding: never included (faulted bundle)
-  Landed --> Processed: slot replayed
-  Processed --> Confirmed: greater-equal 2/3 stake voted
-  Confirmed --> Finalized: rooted (~31 blocks)
-  Finalized --> [*]
-  NonLanding --> [*]
-  </pre>
-  <figcaption>Figure 3 — "Landed" (binary inclusion) is distinct from any commitment level. A faulted bundle never lands and is recorded with an absent <span class="mono">landed_slot</span> (rendered <span class="mono">—</span>).</figcaption>
-  </figure>
+    <h3>The lifecycle, measured</h3>
+    <p>This is what the eyes actually see — one submission's progression, with the real deltas from the graded run. Two adjacent deltas, two orders of magnitude apart, measuring different physics.</p>
+    <div class="spine">
+      <div class="spine__scan" aria-hidden="true"></div>
+      <div class="node"><span class="node__dot"></span><div class="node__name">SUBMITTED</div><p class="node__note">bundle sent to the Jito block engine</p></div>
+      <div class="node node--land"><span class="node__dot"></span><div class="node__name">LANDED · inclusion</div><p class="node__note">included in a Jito leader's slot — binary, detected on the tx stream</p></div>
+      <div class="node node--ghost"><span class="node__dot"></span><div class="node__name">NON-LANDING</div><p class="node__note">faulted bundles never reach inclusion → recorded with no slot</p></div>
+      <div class="node"><span class="node__dot"></span><div class="node__name">PROCESSED</div><p class="node__note">block replayed by a node</p></div>
+      <div class="delta"><span class="delta__v">+123 ms</span><span class="delta__l">vote-aggregation latency (median) — consensus health</span></div>
+      <div class="node"><span class="node__dot"></span><div class="node__name">CONFIRMED</div><p class="node__note">≥ ⅔ of stake voted on the slot</p></div>
+      <div class="delta"><span class="delta__v hi">+12.2 s</span><span class="delta__l">rooting (~31 confirmed blocks)</span></div>
+      <div class="node node--final"><span class="node__dot"></span><div class="node__name">FINALIZED</div><p class="node__note">slot rooted and irreversible</p></div>
+      <p class="spine__foot"><b>123 ms vs 12.2 s.</b> The first measures how fast votes propagate; the second waits for the chain to root. Same instrument, two different questions.</p>
+    </div>
 
-  <h3>Failure path — diagnose → remedy → resubmit</h3>
-  <p>A Jito bundle is all-or-nothing, so a faulted transaction never lands and leaves no on-chain <code>meta.err</code>. The one deterministic pre-submit source of <code>{err, logs, unitsConsumed}</code> is a preflight <code>simulateTransaction</code> — and that simulation output <em>is</em> the raw failure surface handed to the agent.</p>
-  <figure class="diagram">
-  <pre class="mermaid">
+    <h3>Failure path — diagnose, remedy, resubmit</h3>
+    <p>A Jito bundle is all-or-nothing, so a faulted transaction never lands and leaves no on-chain error. The one deterministic pre-submit source of truth is a preflight <code>simulateTransaction</code> — and that output <em>is</em> the raw surface handed to the agent.</p>
+    <figure>
+      <div class="diagram"><pre class="mermaid">
 sequenceDiagram
   autonumber
   participant O as injection_run
-  participant B as bundle
   participant R as rpc.simulate
-  participant C as classify (baseline)
   participant A as Agent → OpenRouter
   participant DB as SQLite
-  O->>B: send faulted attempt-1 (free, non-landing)
   O->>R: simulateTransaction
-  R-->>O: err · instruction_error · logs · units
-  O->>C: classify_failure → baseline class + remedy
-  O->>A: POST /decide (raw surface: instruction_error + logs + program_id)
-  A-->>O: diagnosis · triage · remedy · confidence · reasoning_trace
-  O->>DB: record_decision (agent + baseline contrast)
+  R-->>O: err · instruction_error · logs
+  O->>A: POST /decide (raw surface, no failure_class)
+  A-->>O: diagnosis · triage · remedy · trace
+  O->>DB: record_decision (agent + baseline)
   alt remedy = abort
     O-->>O: stop — no retry
   else recoverable
-    O->>B: attempt-2 (fresh blockhash / raised CU / bumped tip)
-    B-->>O: Landed
+    O->>O: attempt-2 (fresh blockhash / raised CU)
   end
-  </pre>
-  <figcaption>Figure 4 — The agent receives the raw surface, not the baseline verdict. The four-class classifier runs in parallel only to populate the contrast column. <span class="mono">ADR 0010 · 0012</span></figcaption>
-  </figure>
-</section>
+      </pre></div>
+      <figcaption><b>Figure 3.</b> The agent receives the raw surface, not the baseline verdict. <span>ADR 0010 · 0012</span></figcaption>
+    </figure>
+  </section>
 
-<!-- 4 INFRA -->
-<section id="infra">
-  <h2><span class="num">4</span>Infrastructure Decisions</h2>
-  <p>Every decision below is recorded as an ADR in the repo. The load-bearing ones:</p>
-  <table>
-    <thead><tr><th>Decision</th><th>What &amp; why</th><th>ADR</th></tr></thead>
-    <tbody>
-      <tr><td><strong>Mainnet, not devnet</strong></td><td>Jito's Block Engine only lands bundles on mainnet, and slots must be explorer-verifiable. SolInfra credits remove the cost argument; a dedicated low-balance keypair caps exposure.</td><td>0002</td></tr>
-      <tr><td><strong>Yellowstone via SolInfra</strong></td><td>Slot + transaction streaming over a SolInfra Yellowstone gRPC endpoint (separate gRPC-scoped <code>x-token</code> from the RPC key). Confirmation comes from streams, never RPC polling.</td><td>0004</td></tr>
-      <tr><td><strong>Jito bundles are the scored path</strong></td><td>Real <code>sendBundle</code> with multi-region fan-out + leader-window timing. A Jito <code>x-jito-auth</code> UUID (2 req/s/region) is what makes the Block Engine actually <em>forward</em> bundles. Helius Sender is a keyless backstop (plain tx), never the scored path.</td><td>0007</td></tr>
-      <tr><td><strong>Dynamic tips from the Tip Floor</strong></td><td>Base tip = a live Tip-Floor percentile (default p75), rotated across published tip accounts — never hardcoded. The agent may <em>raise</em> the tip as a remedy, but base tipping stays deterministic in Core.</td><td>0005</td></tr>
-      <tr><td><strong>Leader window via searcher gRPC</strong></td><td><code>getNextScheduledLeader</code> is gRPC-only (absent from Jito's HTTP API). A minimal vendored <code>searcher.proto</code> (read-only RPCs, NoAuth) avoids pulling a conflicting SDK crate. Timing is a soft optimization, never a gate.</td><td>0008</td></tr>
-      <tr><td><strong>Streaming resilience</strong></td><td>A spawned receive task feeds a <strong>bounded mpsc channel</strong>; the consumer drains on the caller task. Exponential-backoff reconnect (500ms → 30s), a cumulative reconnect ceiling, and shed-and-count on a full channel give genuine backpressure.</td><td>0009</td></tr>
-      <tr><td><strong>Model access via OpenRouter</strong></td><td>OpenAI-compatible API normalizes reasoning traces (<code>message.reasoning</code>) and structured output (a <code>submit_decision</code> tool) across providers, so the model is env-configurable and rotatable mid-run.</td><td>0006</td></tr>
-    </tbody>
-  </table>
-  <div class="callout">
-    <span class="k">A note on infra discipline</span>
-    The Core was built with a "zero new crates" posture where practical — the searcher gRPC client is generated at build time from a hand-trimmed proto, and reconnect/backoff is hand-rolled rather than pulled from a dependency. This keeps the network surface auditable and the build reproducible.
-  </div>
-</section>
+  <!-- ===== 04 PROVENANCE ===== -->
+  <section class="section" id="provenance" data-nav="Provenance" data-num="04" data-eyebrow="04 · Provenance">
+    <div class="eyebrow">04 · Provenance</div>
+    <h2 class="h">Infrastructure decisions</h2>
+    <p class="lede">Every decision is recorded as an ADR in the repo. The load-bearing ones:</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Decision</th><th>What &amp; why</th><th>ADR</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Mainnet, not devnet</strong></td><td>Jito lands bundles only on mainnet; slots must be explorer-verifiable. SolInfra credits remove the cost argument; a low-balance keypair caps exposure.</td><td>0002</td></tr>
+        <tr><td><strong>Streams, not polling</strong></td><td>Inclusion from the tx stream, commitment from the slot stream. <code>getBundleStatuses</code> is a cross-check only.</td><td>0004</td></tr>
+        <tr><td><strong>Dynamic tips</strong></td><td>Base tip = a live tip-floor percentile (default p75), rotated across accounts — never hardcoded. The agent may raise it as a remedy; base tipping stays in Core.</td><td>0005</td></tr>
+        <tr><td><strong>OpenRouter</strong></td><td>OpenAI-compatible API normalizes reasoning traces and a <code>submit_decision</code> tool across providers — the model is env-configurable and rotatable.</td><td>0006</td></tr>
+        <tr><td><strong>Jito bundles are scored</strong></td><td>Real <code>sendBundle</code>, multi-region fan-out. A Jito auth UUID makes the engine forward bundles. Helius Sender is a keyless backstop, never the scored path.</td><td>0007</td></tr>
+        <tr><td><strong>Leader via searcher gRPC</strong></td><td><code>getNextScheduledLeader</code> is gRPC-only; a minimal vendored proto avoids a conflicting SDK. Timing is a soft signal, never a gate.</td><td>0008</td></tr>
+        <tr><td><strong>Stream resilience</strong></td><td>A receive task feeds a bounded channel; exponential-backoff reconnect, a cumulative ceiling, and shed-and-count give genuine backpressure.</td><td>0009</td></tr>
+      </tbody>
+    </table></div>
+  </section>
 
-<!-- 5 FAILURE -->
-<section id="failure">
-  <h2><span class="num">5</span>Failure-Handling Strategy</h2>
-  <p>Failure handling is the heart of the system — happy-path-only submissions are explicitly disqualified. Argus handles failure on two axes: a <strong>bounded</strong> four-class baseline (for remedy variation) and an <strong>unbounded</strong> program-error tail (for diagnosis variation).</p>
+  <!-- ===== 05 BLIND SPOTS ===== -->
+  <section class="section" id="blindspots" data-nav="Blind spots" data-num="05" data-eyebrow="05 · Blind spots">
+    <div class="eyebrow">05 · Blind spots</div>
+    <h2 class="h">Failure handling</h2>
+    <p class="lede">Failure is the heart of the system — happy-path-only submissions are disqualified. Argus handles it on two axes: a bounded four-class baseline for remedy variation, and an unbounded program-error tail for diagnosis variation.</p>
+    <h3>The bounded baseline — four classes</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Failure class</th><th>Induced by</th><th>Default remedy</th></tr></thead>
+      <tbody>
+        <tr><td>Expired blockhash</td><td>Sign against a real blockhash aged ~200 slots (past the ~150 window)</td><td>refresh blockhash</td></tr>
+        <tr><td>Compute exceeded</td><td>CU limit set to 1, below need</td><td>raise CU limit (from re-simulation)</td></tr>
+        <tr><td>Bundle failure</td><td>Include a failing instruction</td><td>abort / rebuild</td></tr>
+        <tr><td>Fee too low</td><td>Tip below the live floor under contention</td><td>bump tip</td></tr>
+      </tbody>
+    </table></div>
 
-  <h3>The bounded baseline — four classes</h3>
-  <p>A deterministic taxonomy, induced by fault injection and classified from the preflight simulation's structured <code>instruction_error</code> (not string-matching). Each maps to a default remedy that Core can execute on its own when the agent is unreachable.</p>
-  <table>
-    <thead><tr><th>Failure class</th><th>Induced by</th><th>Determinism</th><th>Default remedy</th></tr></thead>
-    <tbody>
-      <tr><td>Expired Blockhash</td><td>Sign against a real blockhash aged ~200 slots (past the ~150 window)</td><td>Deterministic</td><td>refresh blockhash</td></tr>
-      <tr><td>Compute Exceeded</td><td>CU limit set to 1, below instruction need</td><td>Deterministic</td><td>raise CU limit (from re-simulated need)</td></tr>
-      <tr><td>Bundle Failure</td><td>Include a failing instruction</td><td>Deterministic</td><td>abort / rebuild</td></tr>
-      <tr><td>Fee Too Low</td><td>Tip below live floor under contention</td><td>Probabilistic</td><td>bump tip</td></tr>
-    </tbody>
-  </table>
+    <h3>The unbounded tail — where a classifier goes blind</h3>
+    <p>One identical malformed instruction — <code>[0xff; 8]</code>, zero accounts — sent to three different real programs produces three distinct errors. The four-class baseline collapses all three to one verdict. The agent does not.</p>
+    <div class="vs">
+      <div class="vs__col blind">
+        <div class="vs__h">What the baseline sees</div>
+        <div class="blindstack" aria-hidden="true">
+          <span class="ghost g1">SPL-Memo</span>
+          <span class="ghost g2">SPL-Token</span>
+          <span class="ghost g3">Orca Whirlpool</span>
+          <span class="verdict">bundle_failure → abort <span class="warnmark">⚠</span></span>
+        </div>
+        <p class="vs__cap">Three programs, one verdict. It cannot tell them apart — the error <em>shapes</em> match, so a <code>match</code> statement is blind.</p>
+      </div>
+      <div class="vs__col seen">
+        <div class="vs__h">What the agent sees</div>
+        <div class="dx"><div class="dx__top"><span class="dx__prog">SPL-Memo</span><span class="dx__conf">0.98</span></div><div class="dx__err">InvalidInstructionData</div><p class="dx__say">Non-UTF-8 memo data ("invalid UTF-8 from byte 0").</p></div>
+        <div class="dx"><div class="dx__top"><span class="dx__prog">SPL-Token</span><span class="dx__conf">0.97</span></div><div class="dx__err">Custom(12)</div><p class="dx__say">Malformed instruction discriminant — InvalidInstruction.</p></div>
+        <div class="dx"><div class="dx__top"><span class="dx__prog">Orca Whirlpool</span><span class="dx__conf">0.98</span></div><div class="dx__err">Custom(101)</div><p class="dx__say">Anchor InstructionFallbackNotFound — wrong or stale IDL.</p></div>
+      </div>
+    </div>
 
-  <h3>The unbounded tail — where a classifier goes blind</h3>
-  <p>One identical malformed instruction (<code>[0xff; 8]</code>, zero accounts) sent to three different real programs produces three <em>distinct</em> errors that the four-class baseline collapses to one blind <code>bundle_failure → abort</code>. This is the case that proves reasoning beats lookup.</p>
-  <figure class="diagram">
-  <pre class="mermaid">
-flowchart TB
-  I["one malformed instruction<br/>[0xff;8] · zero accounts"]
-  I --> M["SPL-Memo"]
-  I --> T["SPL-Token"]
-  I --> W["Orca Whirlpool"]
-  M --> ME["InvalidInstructionData<br/>non-UTF-8 memo"]
-  T --> TE["Custom(12)<br/>InvalidInstruction"]
-  W --> WE["Custom(101)<br/>Anchor fallback-not-found"]
-  ME --> BASE["BASELINE collapses all three:<br/>bundle_failure → abort ⚠"]
-  TE --> BASE
-  WE --> BASE
-  ME --> A1["AGENT: non-UTF-8 memo data · 0.98"]
-  TE --> A2["AGENT: malformed token discriminant · 0.97"]
-  WE --> A3["AGENT: wrong / stale Anchor IDL · 0.98"]
-  </pre>
-  <figcaption>Figure 5 — Meaning is program-relative: Token's <span class="mono">Custom(12)</span> and Anchor's <span class="mono">Custom(101)</span> share an error <em>shape</em> but nothing else. The baseline is blind; the agent is not.</figcaption>
-  </figure>
+    <h3>Retry, recovery, degradation</h3>
+    <ul>
+      <li><strong>Remedy execution stays in Core.</strong> The agent <em>names</em> the remedy; Core owns the magnitudes — e.g. the raised CU limit comes from a max-CU re-simulation, not a tuned constant.</li>
+      <li><strong>Attempt-2 is seeded clean</strong>, so a remedy is tested honestly rather than inheriting the injected fault.</li>
+      <li><strong>Loud degradation.</strong> If the agent is unreachable within ~45s, Core falls back to the baseline and records <code>model="local-fallback"</code> — visible in the log, never silent.</li>
+    </ul>
+  </section>
 
-  <h3>Retry, recovery, and degradation</h3>
-  <ul>
-    <li><strong>Remedy execution stays in Core.</strong> The agent <em>names</em> the remedy (refresh blockhash, bump tip, raise CU limit, hold-and-resubmit, abort); Core owns the magnitudes — e.g. the raised CU limit is derived from a max-CU re-simulation (×1.5, capped at 1.4M), not a tuned constant.</li>
-    <li><strong>Attempt-2 is seeded clean.</strong> The injected attempt-1 cap applies only to attempt-1; the retry starts from a fresh state so a remedy is tested honestly.</li>
-    <li><strong>Loud degradation.</strong> If the agent is unreachable within <code>ARGUS_AGENT_TIMEOUT_SECS</code> (~45s), Core falls back to the local baseline policy and records <code>model="local-fallback"</code> — the run never dies on an agent hiccup, and the fallback is visible in the log.</li>
-    <li><strong>Stream resilience as failure handling.</strong> A dead endpoint is bounded by a reconnect ceiling that returns <code>gave_up</code> rather than hanging; a dropped Landed frame is recovered by post-stream RPC reconciliation.</li>
-  </ul>
-</section>
+  <!-- ===== 06 JUDGMENT ===== -->
+  <section class="section" id="judgment" data-nav="Judgment" data-num="06" data-eyebrow="06 · Judgment">
+    <div class="eyebrow">06 · Judgment</div>
+    <h2 class="h">AI agent responsibilities</h2>
+    <p class="lede">The agent owns exactly one operational decision — failure diagnosis. It observes a failed transaction, reasons about why it failed, and decides what must change before retrying. Retry decisions come from the agent, not from hardcoded logic.</p>
+    <h3>The contract</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Direction</th><th>Payload</th></tr></thead>
+      <tbody>
+        <tr><td>Core → Agent<br><code>POST /decide</code></td><td><code>error_text</code>, <code>instruction_error</code>, <code>failing_program_id</code>, <code>program_logs[]</code>, <code>tip_floor_p50/p75</code>, <code>blockhash_age_slots</code>, <code>cu_limit</code>, <code>cu_used</code>. <strong>No failure_class is sent.</strong></td></tr>
+        <tr><td>Agent → Core<br><code>submit_decision</code></td><td><code>diagnosis</code> (free text), <code>triage</code>, <code>remedy</code>, <code>rationale</code>, <code>confidence</code> — plus <code>reasoning_trace</code> and the serving <code>model</code>.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Triage — the axis the agent reasons on</h3>
+    <div class="cards4">
+      <div class="triage"><b>refresh</b><span>expired blockhash → refresh &amp; resubmit</span></div>
+      <div class="triage"><b>modify</b><span>compute exceeded → raise CU / bump tip</span></div>
+      <div class="triage"><b>permanent</b><span>malformed call → abort, with the reason</span></div>
+      <div class="triage"><b>funding</b><span>insufficient lamports → abort / top up</span></div>
+    </div>
+    <div class="callout warn">
+      <span class="k">Why this isn't sequential automation</span>
+      <p>Any decision specifiable cleanly enough to grade is encodable as a classifier — legible ⟹ enumerable ⟹ lookup-replicable. Handing the agent a four-class verdict and a five-element remedy set is a 4→5 mapping a <code>match</code> replicates: the "simple wrapper" the brief disqualifies. The escape is a different <strong>input</strong> — the unbounded, unstructured raw failure surface. An AMM alone defines its own custom-error enum (<code>Custom(6022)</code> differs per program and version); a static classifier would need a combinatorial, perpetually-stale table. Reasoning over the raw surface does not.</p>
+    </div>
+    <p>The <strong>honesty boundary</strong>: on a permanent failure the agent and the baseline both abort — the agent's value there is the <em>reason</em>, not a different action. It is graded on the diagnoses a lookup can't produce, not on theatrical disagreement. <span class="pill">ADR 0012</span></p>
+  </section>
 
-<!-- 6 AGENT -->
-<section id="agent">
-  <h2><span class="num">6</span>AI Agent Responsibilities</h2>
-  <p>The agent owns exactly one operational decision — <strong>failure diagnosis</strong> (the challenge's "Failure Reasoning" option, with autonomous fault-injection recovery as a strict superset). It observes a failed transaction, reasons about <em>why</em> it failed, and decides what must change before retrying. Retry decisions come from the agent, not from hardcoded logic.</p>
+  <!-- ===== 07 THE LOG ===== -->
+  <section class="section" id="log" data-nav="The log" data-num="07" data-eyebrow="07 · The log">
+    <div class="eyebrow">07 · The log</div>
+    <h2 class="h">Operational evidence</h2>
+    <p class="lede">From the graded mainnet run <code>run-1781958744615</code>, committed to the repo as <code>logs/lifecycle-1781958744615.{md,jsonl}</code>.</p>
+    <h3>The agent vs. the baseline, on real errors</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Program</th><th>Raw error</th><th>Agent diagnosis</th><th>Conf.</th><th>Baseline</th></tr></thead>
+      <tbody>
+        <tr><td>System (funding)</td><td><code>Custom(1)</code></td><td>insufficient funds — held 47.8M lamports, needed 1e15</td><td>0.97</td><td>abort ⚠</td></tr>
+        <tr><td>SPL-Memo</td><td><code>InvalidInstructionData</code></td><td>non-UTF-8 memo data</td><td>0.98</td><td>abort ⚠</td></tr>
+        <tr><td>SPL-Token</td><td><code>Custom(12)</code></td><td>malformed instruction discriminant</td><td>0.97</td><td>abort ⚠</td></tr>
+        <tr><td>Orca Whirlpool</td><td><code>Custom(101)</code></td><td>Anchor fallback-not-found — stale IDL</td><td>0.98</td><td>abort ⚠</td></tr>
+      </tbody>
+    </table></div>
+    <p>Four payloads the baseline collapses to one verdict drew four distinct diagnoses. The two recoverable injections — expired blockhash (aged 200 slots, conf. 0.99) and compute exceeded (<code>cu_limit=1</code>, conf. 0.99) — were triaged and <strong>landed on attempt 2</strong> (slots 427724252, 427724375). Every decision carried a non-empty reasoning trace.</p>
+    <h3>The three required questions, from this run</h3>
+    <div class="qa"><p class="q">Q1 · What does the processed→confirmed delta tell you?</p><p>Vote-aggregation latency (≥⅔ stake voting) — consensus health, not inclusion speed. This run: <strong>87–272 ms, median 123 ms</strong>. The next hop, confirmed→finalized, took ~12.2 s (rooting), two orders of magnitude larger.</p></div>
+    <div class="qa"><p class="q">Q2 · Why never use a finalized blockhash for a time-sensitive tx?</p><p>A blockhash is valid only ~150 slots (~60–90 s); a finalized one is already ~31 slots old on receipt — ~20% of the window burned before you submit. Shown directly: a blockhash aged 200 slots was rejected with <code>BlockhashNotFound</code>; recovery needed a fresh one.</p></div>
+    <div class="qa"><p class="q">Q3 · What if the Jito leader skips their slot?</p><p>The bundle is slot-specific and atomic — not included, not auto-forwarded, and no tip charged (tips pay only on inclusion). Resubmit to the next leader window with a fresh blockhash. All 6 faulted bundles here were sent free; the recoverable two landed on resubmission.</p></div>
+  </section>
 
-  <h3>The contract</h3>
-  <table>
-    <thead><tr><th>Direction</th><th>Payload</th></tr></thead>
-    <tbody>
-      <tr><td>Core → Agent<br/><span class="meta">POST /decide</span></td><td><code>attempt</code>, <code>error_text</code>, <code>instruction_error</code>, <code>failing_program_id</code>, <code>program_logs[]</code>, <code>tip_lamports</code>, <code>tip_floor_p50/p75</code>, <code>blockhash_age_slots</code>, <code>cu_limit</code>, <code>cu_used</code>, <code>current_slot</code>. <strong>No <code>failure_class</code> is sent.</strong></td></tr>
-      <tr><td>Agent → Core<br/><span class="meta">submit_decision tool</span></td><td><code>diagnosis</code> (free text), <code>triage</code> (enum), <code>remedy</code> (enum), <code>rationale</code>, <code>confidence</code> — plus <code>reasoning_trace</code> (<code>message.reasoning</code>) and the serving <code>model</code> slug.</td></tr>
-    </tbody>
-  </table>
-  <p>The agent reasons in three steps: <strong>diagnose</strong> (identify the failing program, decode its program-specific error from the logs), <strong>triage</strong> into one of four recovery buckets, then choose the executable <strong>remedy</strong>. The system prompt explicitly forbids a fixed error→remedy mapping.</p>
+  <!-- ===== APPENDIX ===== -->
+  <section class="section" id="adrs" data-nav="ADRs" data-eyebrow="Appendix · ADRs">
+    <div class="eyebrow">Appendix</div>
+    <h2 class="h">Decision record</h2>
+    <p>Full context and consequences live in the repository under <code>docs/adr/</code>.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>0001</td><td>Two-runtime split: Rust Core + TypeScript Agent over HTTP</td></tr>
+        <tr><td>0002</td><td>Run the real path on mainnet, not devnet</td></tr>
+        <tr><td>0003</td><td>Agent owns Failure Reasoning <em>(superseded by 0012)</em></td></tr>
+        <tr><td>0004</td><td>Confirmation via Yellowstone streams; bundle-status RPC is cross-check only</td></tr>
+        <tr><td>0005</td><td>Dynamic tips from the tip floor; Core sets base, Agent adjusts on failure</td></tr>
+        <tr><td>0006</td><td>Model access via OpenRouter, not a single-vendor SDK</td></tr>
+        <tr><td>0007</td><td>Jito bundles are the scored path; Helius Sender is a backstop</td></tr>
+        <tr><td>0008</td><td>Leader-window timing via a minimal gRPC searcher client</td></tr>
+        <tr><td>0009</td><td>Resilient subscriptions: bounded-channel backpressure + reconnect</td></tr>
+        <tr><td>0010</td><td>Deterministic classification via preflight simulation <em>(amended by 0011, 0012)</em></td></tr>
+        <tr><td>0011</td><td>The Run: single-session orchestrator, Run-ID-prefix keying</td></tr>
+        <tr><td>0012</td><td>Agent owns Failure Diagnosis over the unbounded program-error tail</td></tr>
+      </tbody>
+    </table></div>
+  </section>
 
-  <h3>Triage — the axis the agent reasons on</h3>
-  <div class="grid">
-    <div class="card"><h4>recoverable_by_refresh</h4><div class="meta">e.g. expired blockhash → refresh &amp; resubmit</div></div>
-    <div class="card"><h4>recoverable_by_modification</h4><div class="meta">e.g. compute exceeded → raise CU / bump tip</div></div>
-    <div class="card"><h4>permanent</h4><div class="meta">malformed call → abort (but with the program-specific reason)</div></div>
-    <div class="card"><h4>funding</h4><div class="meta">insufficient lamports → abort / top up</div></div>
-  </div>
+  <footer>
+    <p><strong>Argus</strong> — architecture field dossier for the Superteam Nigeria Advanced Infrastructure Challenge. The source of truth for code-level detail is the <a href="https://github.com/ego-errante/argus">repository</a>; this document explains the <em>why</em> and the <em>shape</em>.</p>
+  </footer>
 
-  <div class="callout warn">
-    <span class="k">Why this isn't sequential automation</span>
-    Any decision specifiable cleanly enough to grade is encodable as a classifier — <em>legible ⟹ enumerable ⟹ lookup-replicable</em>. Handing the agent a four-class verdict and a five-element remedy set is a 4→5 mapping a <code>match</code> statement replicates: the "simple wrapper" the challenge disqualifies. The escape is not a cleverer decision — it's a different <strong>input</strong>: the unbounded, unstructured raw failure surface. An AMM alone defines its own custom-error enum (<code>Custom(6022)</code> differs per program and per version); a static classifier would need a combinatorial, perpetually-stale per-program table. Reasoning over the raw surface does not.
-  </div>
-  <p>The <strong>honesty boundary</strong>: on a <code>permanent</code> failure the agent and the baseline both abort — the agent's added value there is the <em>reason</em>, not a different action. That candor is the point: the agent is graded on the diagnoses a lookup can't produce, not on theatrical disagreement. <span class="pill">ADR 0012</span></p>
-</section>
-
-<!-- 7 EVIDENCE -->
-<section id="evidence">
-  <h2><span class="num">7</span>Operational Evidence</h2>
-  <p>From the graded mainnet run <code>run-1781958744615</code> (Lifecycle Log committed to the repo as <code>logs/lifecycle-1781958744615.{md,jsonl}</code>):</p>
-  <div class="badges" style="margin:14px 0;">
-    <span class="badge">15 submissions</span>
-    <span class="badge">6 injected failures</span>
-    <span class="badge green">9 landed</span>
-    <span class="badge">0.000135 SOL total</span>
-    <span class="badge amber">faulted bundles cost 0 (tips pay only on landing)</span>
-  </div>
-
-  <h3>The agent vs. the baseline, on real errors</h3>
-  <table>
-    <thead><tr><th>Program</th><th>Raw error</th><th>Agent diagnosis</th><th>Conf.</th><th>Baseline</th></tr></thead>
-    <tbody>
-      <tr><td>System (funding)</td><td><code>Custom(1)</code></td><td>insufficient funds — held 47.8M lamports, needed 1e15</td><td>0.97</td><td>bundle_failure → abort ⚠</td></tr>
-      <tr><td>SPL-Memo</td><td><code>InvalidInstructionData</code></td><td>non-UTF-8 memo data ("invalid UTF-8 from byte 0")</td><td>0.98</td><td>bundle_failure → abort ⚠</td></tr>
-      <tr><td>SPL-Token</td><td><code>Custom(12)</code></td><td>malformed instruction discriminant (InvalidInstruction)</td><td>0.97</td><td>bundle_failure → abort ⚠</td></tr>
-      <tr><td>Orca Whirlpool</td><td><code>Custom(101)</code></td><td>Anchor InstructionFallbackNotFound — wrong/stale IDL</td><td>0.98</td><td>bundle_failure → abort ⚠</td></tr>
-    </tbody>
-  </table>
-  <p>Four payloads the baseline collapses to one identical blind verdict drew four <em>distinct</em> program-specific diagnoses. The two recoverable injections — expired blockhash (aged 200 slots → <code>BlockhashNotFound</code>, conf. 0.99) and compute exceeded (<code>cu_limit=1</code>, conf. 0.99) — were triaged and <strong>landed on attempt 2</strong> (slots 427724252 and 427724375). Every decision was served by <code>anthropic/claude-4.6-sonnet</code> with a non-empty reasoning trace (traceless-scored count: 0).</p>
-
-  <h3>The three required questions, answered from this run</h3>
-  <div class="callout">
-    <span class="k">Q1 — what does the processed→confirmed delta tell you?</span>
-    It is the cluster's <strong>vote-aggregation latency</strong> (≥⅔ of stake voting), i.e. <em>consensus health</em> — not inclusion speed. This run: <strong>87–272 ms, median 123 ms</strong> across the 9 landed submissions — sub-quarter-second, i.e. healthy consensus. For contrast, the next hop confirmed→finalized took <strong>~11.8–13.3 s (median ~12.2 s)</strong> because finalization waits for the slot to be rooted (~31 blocks).
-  </div>
-  <div class="callout">
-    <span class="k">Q2 — why never use a finalized blockhash for a time-sensitive tx?</span>
-    A blockhash is valid only <strong>~150 slots (~60–90 s)</strong>. A blockhash fetched at <code>finalized</code> commitment is already <strong>~31 slots old</strong> the instant you receive it — ~20% of the window burned before you've built, signed, and submitted. Demonstrated directly: payload p0, injected with a blockhash aged 200 slots, was rejected at preflight with <code>BlockhashNotFound</code>; the agent diagnosed exactly that and recovery required a fresh blockhash.
-  </div>
-  <div class="callout">
-    <span class="k">Q3 — what if the Jito leader skips their slot?</span>
-    A Jito bundle is slot-specific and all-or-nothing. If that leader skips, the bundle is simply <strong>not included</strong> — it is <em>not</em> auto-forwarded to the next leader, and because tips pay only on inclusion, <strong>no tip is charged</strong>. The remedy is to resubmit to the next leader window with a fresh blockhash. This run is the receipt: all 6 faulted bundles were sent free (zero tip), and the two recoverable faults were resubmitted and landed.
-  </div>
-</section>
-
-<hr/>
-
-<!-- ADR INDEX -->
-<section id="adrs">
-  <h2>Appendix · ADR Index</h2>
-  <p>The full decisions, with context and consequences, live in the repository under <code>docs/adr/</code>.</p>
-  <table>
-    <thead><tr><th>#</th><th>Decision</th></tr></thead>
-    <tbody>
-      <tr><td>0001</td><td>Two-runtime split: Rust Core + TypeScript Agent over HTTP</td></tr>
-      <tr><td>0002</td><td>Run the real path on mainnet, not devnet</td></tr>
-      <tr><td>0003</td><td>Agent owns Failure Reasoning <em>(superseded by 0012)</em></td></tr>
-      <tr><td>0004</td><td>Confirmation via two Yellowstone subscriptions; bundle-status RPC is cross-check only</td></tr>
-      <tr><td>0005</td><td>Dynamic tips from the Tip Floor; Core sets base, Agent adjusts on failure</td></tr>
-      <tr><td>0006</td><td>Model access via OpenRouter, not a single-vendor SDK</td></tr>
-      <tr><td>0007</td><td>Jito bundles are the scored path; Helius Sender is a backstop</td></tr>
-      <tr><td>0008</td><td>Leader-window timing via a minimal gRPC SearcherService client (NoAuth)</td></tr>
-      <tr><td>0009</td><td>Resilient subscriptions: bounded-channel backpressure + exponential-backoff reconnect</td></tr>
-      <tr><td>0010</td><td>Deterministic failure classification via preflight simulation <em>(amended by 0011, 0012)</em></td></tr>
-      <tr><td>0011</td><td>The Run: single-session orchestrator, Run-ID-prefix keying, sent injected failures</td></tr>
-      <tr><td>0012</td><td>Agent owns Failure Diagnosis over the unbounded program-error tail</td></tr>
-    </tbody>
-  </table>
-</section>
-
-<footer>
-  <p>Argus — architecture document for the Superteam Nigeria Advanced Infrastructure Challenge. Source of truth for code-level detail is the repository; this document explains the <em>why</em> and the <em>shape</em>.</p>
-</footer>
 </main>
 </div>
 
@@ -493,11 +647,95 @@ flowchart TB
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
   mermaid.initialize({
     startOnLoad: true,
-    theme: 'neutral',
+    theme: 'base',
     flowchart: { curve: 'basis', useMaxWidth: true },
-    sequence: { useMaxWidth: true },
-    themeVariables: { fontFamily: '-apple-system, Segoe UI, Roboto, sans-serif' }
+    sequence: { useMaxWidth: true, mirrorActors: false },
+    themeVariables: {
+      background:'#FFFFFF', primaryColor:'#FBFCFE', primaryBorderColor:'#C9D0DE',
+      primaryTextColor:'#0A1020', secondaryColor:'#EEF1F7', tertiaryColor:'#F7F8FB',
+      lineColor:'#8893A6', fontFamily:'IBM Plex Mono, monospace', fontSize:'13px',
+      clusterBkg:'#FBFCFE', clusterBorder:'#C9D0DE',
+      actorBkg:'#FFFFFF', actorBorder:'#A86F12', actorTextColor:'#0A1020',
+      signalColor:'#5C6678', signalTextColor:'#0A1020',
+      noteBkgColor:'#FBF3E2', noteBorderColor:'#E6B450', noteTextColor:'#0A1020',
+      labelBoxBkgColor:'#EEF1F7', labelTextColor:'#0A1020', sequenceNumberColor:'#FFFFFF'
+    }
   });
+</script>
+
+<script>
+  (function(){
+    var sections = Array.prototype.slice.call(document.querySelectorAll('section[id], header[id]'));
+    var railList = document.getElementById('railList');
+    var drawer = document.getElementById('drawer');
+    var whereLabel = document.getElementById('whereLabel');
+
+    // build rail + drawer from the same source
+    sections.forEach(function(s, i){
+      var nav = s.getAttribute('data-nav') || s.id;
+      var num = s.getAttribute('data-num') || '';
+      var eyebrow = s.getAttribute('data-eyebrow') || nav;
+      var li = document.createElement('li');
+      li.className = 'rail__item'; li.setAttribute('data-for', s.id);
+      li.innerHTML = '<a href="#'+s.id+'"><span class="rail__eye"></span><span class="rail__num">'+(num||'·')+'</span><span>'+nav+'</span></a>';
+      railList.appendChild(li);
+      var a = document.createElement('a');
+      a.href = '#'+s.id;
+      a.innerHTML = '<span class="e">'+eyebrow+'</span><span class="t">'+nav+'</span>';
+      a.addEventListener('click', closeDrawer);
+      drawer.appendChild(a);
+    });
+
+    var railItems = Array.prototype.slice.call(railList.children);
+    function setActive(id){
+      railItems.forEach(function(li){ li.classList.toggle('is-active', li.getAttribute('data-for')===id); });
+      var s = document.getElementById(id);
+      if (s) whereLabel.textContent = s.getAttribute('data-nav') || '';
+    }
+
+    if ('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if (e.isIntersecting) setActive(e.target.id); });
+      }, { rootMargin:'-45% 0px -50% 0px', threshold:0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    // ---- mobile drawer ----
+    var toggle = document.getElementById('tocToggle');
+    var scrim = document.getElementById('scrim');
+    var closeBtn = document.getElementById('drawerClose');
+    function openDrawer(){
+      drawer.classList.add('is-open'); scrim.classList.add('is-open');
+      document.body.classList.add('no-scroll');
+      toggle.setAttribute('aria-expanded','true'); drawer.setAttribute('aria-hidden','false');
+      var first = drawer.querySelector('a'); if (first) first.focus();
+    }
+    function closeDrawer(){
+      drawer.classList.remove('is-open'); scrim.classList.remove('is-open');
+      document.body.classList.remove('no-scroll');
+      toggle.setAttribute('aria-expanded','false'); drawer.setAttribute('aria-hidden','true');
+    }
+    toggle.addEventListener('click', openDrawer);
+    scrim.addEventListener('click', closeDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function(e){ if (e.key==='Escape') closeDrawer(); });
+
+    // ---- aperture constellation ----
+    var field = document.getElementById('apertures');
+    if (field){
+      var N = 42, html = '';
+      for (var i=0;i<N;i++){
+        var x=(Math.random()*100).toFixed(2), y=(Math.random()*100).toFixed(2);
+        var d=(4+Math.random()*7).toFixed(1);
+        var open = Math.random() < 0.13;
+        html += '<span class="ap'+(open?' ap--open':'')+'" style="left:'+x+'%;top:'+y+'%;width:'+d+'px;height:'+d+'px;"></span>';
+      }
+      field.innerHTML = html;
+    }
+
+    // ---- load reveal ----
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ document.body.classList.add('lit'); }); });
+  })();
 </script>
 </body>
 </html>
