@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Argus — Architecture Field Dossier</title>
+<title>Argus — Architecture</title>
 <meta name="description" content="Argus — a Solana smart-transaction stack. The Core is the eyes; the Agent is the judgment; the boundary is the architecture." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -135,15 +135,6 @@
   .readout__v.live { color:var(--signal); }
   @media (max-width:560px){ .readout { grid-template-columns:repeat(2,1fr); } .readout__cell:nth-child(3n){border-right:1px solid var(--line-soft);} .readout__cell:nth-child(2n){border-right:none;} }
 
-  /* ---------- field guide (numbered path) ---------- */
-  .guide { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:1.2rem; }
-  @media (max-width:720px){ .guide { grid-template-columns:1fr; } }
-  .step { border:1px solid var(--line); border-radius:12px; padding:18px; background:var(--panel); }
-  .step__n { font-family:var(--mono); font-size:.72rem; color:var(--lamp); letter-spacing:.1em; }
-  .step__t { font-family:var(--serif); font-weight:600; font-size:1.1rem; margin:.3rem 0 .35rem; }
-  .step__d { font-size:.92rem; color:var(--muted); margin:0; }
-  .step a { font-weight:500; }
-
   /* ---------- tables ---------- */
   .tbl-wrap { overflow-x:auto; margin:1.2rem 0; border:1px solid var(--line); border-radius:12px; }
   table { border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px; }
@@ -269,7 +260,7 @@
 
 <!-- ===== mobile TOC: topbar + drawer ===== -->
 <div class="topbar">
-  <div><span class="topbar__brand">Argus</span><span class="topbar__where" id="whereLabel">Dossier</span></div>
+  <div><span class="topbar__brand">Argus</span><span class="topbar__where" id="whereLabel">Overview</span></div>
   <button class="topbar__toggle" id="tocToggle" aria-expanded="false" aria-controls="drawer">
     <span class="dot" aria-hidden="true"></span> Contents
   </button>
@@ -277,7 +268,7 @@
 <div class="drawer-scrim" id="scrim"></div>
 <nav class="drawer" id="drawer" aria-label="Sections" aria-hidden="true">
   <div class="drawer__head">
-    <span class="drawer__title">Field dossier</span>
+    <span class="drawer__title">Contents</span>
     <button class="drawer__close" id="drawerClose" aria-label="Close contents">&times;</button>
   </div>
   <!-- links injected to mirror the rail -->
@@ -286,7 +277,7 @@
 <!-- ===== desktop TOC: watch-rail ===== -->
 <aside class="rail" aria-label="Sections">
   <div class="rail__brand">Argus</div>
-  <div class="rail__tag">Architecture · Field Dossier</div>
+  <div class="rail__tag">Architecture</div>
   <ul class="rail__list" id="railList"></ul>
 </aside>
 
@@ -294,10 +285,10 @@
 <main>
 
   <!-- ===== HERO ===== -->
-  <header class="hero section" id="top" data-nav="Dossier" data-eyebrow="Dossier">
+  <header class="hero section" id="top" data-nav="Overview" data-eyebrow="Overview">
     <div class="aperture-field" id="apertures" aria-hidden="true"></div>
     <div class="hero__inner">
-      <div class="hero__eyebrow reveal d1">Solana transaction infrastructure · Mainnet · Field dossier</div>
+      <div class="hero__eyebrow reveal d1">Solana transaction infrastructure · Mainnet</div>
       <h1 class="wordmark reveal d1">Argus<span class="glyph">.</span></h1>
       <p class="thesis reveal d2">The Core is the <em>eyes</em>. The Agent is the <em>judgment</em>. The boundary between them is the architecture.</p>
       <p class="hero__sub reveal d3">A smart-transaction stack that watches Solana in real time, lands Jito bundles intelligently, tracks every submission across commitment levels, and delegates one decision — failure diagnosis — to an AI agent that reasons over the raw failure surface instead of running a script.</p>
@@ -312,33 +303,9 @@
     </div>
   </header>
 
-  <!-- ===== FIELD GUIDE ===== -->
-  <section class="section" id="guide" data-nav="Field guide" data-eyebrow="Field guide">
-    <div class="eyebrow">Evaluate in five minutes</div>
-    <h2 class="h">A judge's fast path</h2>
-    <p class="lede">Three reads, in order — the thesis, the proof, the reproduction.</p>
-    <div class="guide">
-      <div class="step">
-        <div class="step__n">01 · The thesis</div>
-        <div class="step__t">Why it isn't a lookup</div>
-        <p class="step__d">The agent reasons over the raw failure surface, not a fixed error→remedy table. See <a href="#judgment">§06 Judgment</a> and ADR&nbsp;0012.</p>
-      </div>
-      <div class="step">
-        <div class="step__n">02 · The proof</div>
-        <div class="step__t">A real mainnet run</div>
-        <p class="step__d">15 sent / 9 landed / 6 faulted for 0.000135 SOL, every slot explorer-verifiable. See <a href="#log">§07 The log</a>.</p>
-      </div>
-      <div class="step">
-        <div class="step__n">03 · Reproduce</div>
-        <div class="step__t">Run it yourself</div>
-        <p class="step__d">Code, setup, and the committed Lifecycle Log live in the <a href="https://github.com/ego-errante/argus">argus repository</a>.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== 01 TOPOLOGY ===== -->
-  <section class="section" id="topology" data-nav="Topology" data-num="01" data-eyebrow="01 · Topology">
-    <div class="eyebrow">01 · Topology</div>
+  <!-- ===== 01 · SYSTEM ARCHITECTURE ===== -->
+  <section class="section" id="topology" data-nav="System architecture" data-num="01" data-eyebrow="01 · System architecture">
+    <div class="eyebrow">01 · System architecture</div>
     <h2 class="h">System architecture</h2>
     <p class="lede">Two runtimes, one contract. A Rust <strong>Core</strong> holds every deterministic, network-facing concern. A TypeScript <strong>Agent</strong> holds a single judgment call. They speak only over HTTP/JSON — and that process boundary is the challenge's required clean separation between AI layer and core stack, made literal.</p>
     <p>Rust earns its place on the Yellowstone gRPC firehose: tokio gives idiomatic bounded-channel backpressure and reconnection — the one genuinely hard feature the brief names. TypeScript hosts the agent for LLM ergonomics and fast prompt iteration. Neither leaks into the other. <span class="pill">ADR 0001</span></p>
@@ -393,8 +360,8 @@ flowchart LR
   </section>
 
   <!-- ===== 02 INSTRUMENTS ===== -->
-  <section class="section" id="instruments" data-nav="Instruments" data-num="02" data-eyebrow="02 · Instruments">
-    <div class="eyebrow">02 · Instruments</div>
+  <section class="section" id="instruments" data-nav="Key components" data-num="02" data-eyebrow="02 · Key components">
+    <div class="eyebrow">02 · Key components</div>
     <h2 class="h">Key components</h2>
     <h3>Core (Rust) — deterministic, network-facing</h3>
     <div class="tbl-wrap"><table>
@@ -432,8 +399,8 @@ flowchart LR
   </section>
 
   <!-- ===== 03 OBSERVATION ===== -->
-  <section class="section" id="observation" data-nav="Observation" data-num="03" data-eyebrow="03 · Observation">
-    <div class="eyebrow">03 · Observation</div>
+  <section class="section" id="observation" data-nav="Data flow" data-num="03" data-eyebrow="03 · Data flow">
+    <div class="eyebrow">03 · Data flow</div>
     <h2 class="h">Data flow between services</h2>
     <h3>Happy path — submit, track, persist</h3>
     <p>The subscription opens <strong>before</strong> the bundle is sent, so inclusion is never missed; tracking is reconciled afterward against <code>getSignatureStatuses</code> in case a Landed frame is dropped.</p>
@@ -460,7 +427,7 @@ sequenceDiagram
     </figure>
 
     <h3>The lifecycle, measured</h3>
-    <p>This is what the eyes actually see — one submission's progression, with the real deltas from the graded run. Two adjacent deltas, two orders of magnitude apart, measuring different physics.</p>
+    <p>One submission's progression on mainnet, with the real deltas from the graded run. Two adjacent deltas, two orders of magnitude apart, measuring different physics.</p>
     <div class="spine">
       <div class="spine__scan" aria-hidden="true"></div>
       <div class="node"><span class="node__dot"></span><div class="node__name">SUBMITTED</div><p class="node__note">bundle sent to the Jito block engine</p></div>
@@ -500,8 +467,8 @@ sequenceDiagram
   </section>
 
   <!-- ===== 04 PROVENANCE ===== -->
-  <section class="section" id="provenance" data-nav="Provenance" data-num="04" data-eyebrow="04 · Provenance">
-    <div class="eyebrow">04 · Provenance</div>
+  <section class="section" id="provenance" data-nav="Infrastructure decisions" data-num="04" data-eyebrow="04 · Infrastructure decisions">
+    <div class="eyebrow">04 · Infrastructure decisions</div>
     <h2 class="h">Infrastructure decisions</h2>
     <p class="lede">Every decision is recorded as an ADR in the repo. The load-bearing ones:</p>
     <div class="tbl-wrap"><table>
@@ -519,9 +486,9 @@ sequenceDiagram
   </section>
 
   <!-- ===== 05 BLIND SPOTS ===== -->
-  <section class="section" id="blindspots" data-nav="Blind spots" data-num="05" data-eyebrow="05 · Blind spots">
-    <div class="eyebrow">05 · Blind spots</div>
-    <h2 class="h">Failure handling</h2>
+  <section class="section" id="blindspots" data-nav="Failure handling" data-num="05" data-eyebrow="05 · Failure handling">
+    <div class="eyebrow">05 · Failure handling</div>
+    <h2 class="h">Failure handling strategy</h2>
     <p class="lede">Failure is the heart of the system — happy-path-only submissions are disqualified. Argus handles it on two axes: a bounded four-class baseline for remedy variation, and an unbounded program-error tail for diagnosis variation.</p>
     <h3>The bounded baseline — four classes</h3>
     <div class="tbl-wrap"><table>
@@ -564,8 +531,8 @@ sequenceDiagram
   </section>
 
   <!-- ===== 06 JUDGMENT ===== -->
-  <section class="section" id="judgment" data-nav="Judgment" data-num="06" data-eyebrow="06 · Judgment">
-    <div class="eyebrow">06 · Judgment</div>
+  <section class="section" id="judgment" data-nav="AI agent" data-num="06" data-eyebrow="06 · AI agent responsibilities">
+    <div class="eyebrow">06 · AI agent responsibilities</div>
     <h2 class="h">AI agent responsibilities</h2>
     <p class="lede">The agent owns exactly one operational decision — failure diagnosis. It observes a failed transaction, reasons about why it failed, and decides what must change before retrying. Retry decisions come from the agent, not from hardcoded logic.</p>
     <h3>The contract</h3>
@@ -591,8 +558,8 @@ sequenceDiagram
   </section>
 
   <!-- ===== 07 THE LOG ===== -->
-  <section class="section" id="log" data-nav="The log" data-num="07" data-eyebrow="07 · The log">
-    <div class="eyebrow">07 · The log</div>
+  <section class="section" id="log" data-nav="Evidence" data-num="07" data-eyebrow="07 · Operational evidence">
+    <div class="eyebrow">07 · Operational evidence</div>
     <h2 class="h">Operational evidence</h2>
     <p class="lede">From the graded mainnet run <code>run-1781958744615</code>, committed to the repo as <code>logs/lifecycle-1781958744615.{md,jsonl}</code>.</p>
     <h3>The agent vs. the baseline, on real errors</h3>
