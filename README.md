@@ -21,7 +21,20 @@ infrastructure decisions, failure-handling strategy, and AI-agent responsibiliti
 introduction, an operational-evidence section (answering the three README questions from a real
 mainnet run), and an ADR index.
 
-## Deploy (Cloudflare Pages)
+It is **interactive**, driven by the real graded-run data embedded inline:
+
+- a **lifecycle explorer** of all 15 submissions — landed rows link the slot *and* the transaction
+  on Solscan and show the commitment deltas to scale; faulted rows expand to the agent's diagnosis,
+  triage, and full reasoning trace;
+- a **failure explorer** that lets you step through each program error and watch the four-class
+  baseline stay blind while the agent reasons out a distinct cause;
+- a **to-scale lifecycle timeline** contrasting the ~123 ms processed→confirmed delta with the
+  ~12.2 s confirmed→finalized wait.
+
+## Deploy
+
+The live document is hosted on Cloudflare, connected to this repository — a push to `main`
+auto-deploys. To deploy a copy manually:
 
 ```bash
 npx wrangler pages deploy ./ --project-name argus-architecture

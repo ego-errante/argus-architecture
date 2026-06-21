@@ -813,6 +813,7 @@ sequenceDiagram
         } else {
           var pc=r.pc||0, cf=r.cf||0;
           h+='<a class="exp-slot" href="'+blockUrl(r.slot)+'" target="_blank" rel="noopener">slot '+r.slot+'</a>';
+          h+=(r.sig?'<a class="exp-slot" href="'+txUrl(r.sig)+'" target="_blank" rel="noopener">tx ↗</a>':'');
           h+='<div class="minitrack" title="P→C '+pc+'ms · C→F '+cf+'ms"><span class="pc" style="width:'+(pc/maxTot*100)+'%"></span><span class="cf" style="width:'+(cf/maxTot*100)+'%"></span></div>';
           h+='<span class="mini-lbl">'+pc+'ms / '+(cf/1000).toFixed(1)+'s</span>';
         }
